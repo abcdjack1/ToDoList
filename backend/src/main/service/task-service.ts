@@ -1,17 +1,19 @@
-import { Task } from "../model/task-model"
-import { BulkWriteResult } from "mongodb"
-import { OrderParams, TaskParams } from "../type/params"
-import { TaskRepo, TaskRepoImpl } from "../repo/task-repo"
+import { Task } from '../model/task-model'
+import { BulkWriteResult } from 'mongodb'
+import { OrderParams, TaskParams } from '../type/params'
+import { TaskRepo, TaskRepoImpl } from '../repo/task-repo'
+import * as TE from 'fp-ts/TaskEither'
+import { pipe } from 'fp-ts/lib/function'
 
 export interface TaskService {
-  save(message: string): Promise<Task>
-  update(id: string, task: TaskParams): Promise<Task | null>
-  completedById(id: string): Promise<Task | null>
-  deleteById(id: string): Promise<Task | null>
-  getUnCompletedTasks(): Promise<Task[]>
-  getCompletedTasks(): Promise<Task[]>
-  reorder(orderParam: OrderParams[]): Promise<BulkWriteResult>
-  findById(id: string): Promise<Task | null>
+  save(message: string): TE.TaskEither<Error, Task>
+  update(id: string, task: TaskParams): TE.TaskEither<Error, Task | null>
+  completedById(id: string): TE.TaskEither<Error, Task | null>
+  deleteById(id: string): TE.TaskEither<Error, Task | null>
+  getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
+  getCompletedTasks(): TE.TaskEither<Error, Task[]>
+  reorder(orderParam: OrderParams[]): TE.TaskEither<Error, BulkWriteResult>
+  findById(id: string): TE.TaskEither<Error, Task | null>
 }
 
 export class TaskServiceImpl implements TaskService {
@@ -31,42 +33,51 @@ export class TaskServiceImpl implements TaskService {
     return this.taskService
   }
 
-  async save(message: string): Promise<Task> {
-    let maxOrderTask = await this.taskRepo.getMaxOrderTask()
-    const maxOrder = maxOrderTask == null ? 0 : maxOrderTask.order + 1
-    const newTask: TaskParams = {
-      message: message,
-      completed: 'N',
-      order: maxOrder
+  save(message: string): TE.TaskEither<Error, Task> {
+    const getMaxOrderTask = this.taskRepo.getMaxOrderTask()
+    const maxOrderPlusOne = (task: Task | null) => task == null ? 0 : task.order + 1
+    const genTaskBody = (order: number): TaskParams => {
+      return {
+        message: message,
+        completed: 'N',
+        order: order
+      }
     }
-    return this.taskRepo.save(newTask)
+    const saveTask = (task: TaskParams) => this.taskRepo.save(task)
+
+    return pipe(
+      getMaxOrderTask,
+      TE.map(maxOrderPlusOne),
+      TE.map(genTaskBody),
+      TE.chain(saveTask)
+    )
   }
 
-  async update(id: string, taskParam: TaskParams): Promise<Task | null> {
+  update(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task | null> {
     return this.taskRepo.updateById(id, taskParam)
   }
 
-  async completedById(id: string): Promise<Task | null> {
+  completedById(id: string): TE.TaskEither<Error, Task | null> {
     return this.taskRepo.completedById(id)
   }
 
-  async deleteById(id: string): Promise<Task | null> {
+  deleteById(id: string): TE.TaskEither<Error, Task | null> {
     return this.taskRepo.deleteById(id)
   }
 
-  async getUnCompletedTasks(): Promise<Task[]> {
+  getUnCompletedTasks(): TE.TaskEither<Error, Task[]> {
     return this.taskRepo.getUnCompletedTasks()
   }
 
-  async getCompletedTasks(): Promise<Task[]> {
+  getCompletedTasks(): TE.TaskEither<Error, Task[]> {
     return this.taskRepo.getCompletedTasks()
   }
 
-  async reorder(orderParams: OrderParams[]): Promise<BulkWriteResult> {
+  reorder(orderParams: OrderParams[]): TE.TaskEither<Error, BulkWriteResult> {
     return this.taskRepo.reorder(orderParams)
   }
 
-  findById(id: string): Promise<Task | null> {
+  findById(id: string): TE.TaskEither<Error, Task | null> {
     return this.taskRepo.findById(id)
   }
 }

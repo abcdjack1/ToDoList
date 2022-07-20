@@ -6,6 +6,8 @@ import { clearTestDB, closeTestDB, connectTestDB } from '../config/test-db-handl
 import { Response as LightMyRequestResponse } from 'light-my-request'
 import { TaskServiceImpl } from '../../main/service/task-service'
 import { OrderParams } from '../../main/type/params'
+import * as TE from 'fp-ts/TaskEither'
+import { pipe } from 'fp-ts/lib/function'
 
 describe('Testing To-Do List API', () => {
   let server: FastifyInstance
@@ -18,7 +20,7 @@ describe('Testing To-Do List API', () => {
     await connectTestDB()
   })
 
-  afterEach(async () => {
+  beforeEach(async () => {
     await clearTestDB()
   })
 
@@ -47,8 +49,19 @@ describe('Testing To-Do List API', () => {
     expect(task.order).not.toBeNull()
   })
 
+  const saveTask = async (message: string) => {
+    return await pipe(
+      taskService.save(message),
+      TE.match(
+        error => { throw error },
+        task => task
+      )
+    )()
+  }
+
   it(`should update task when 'PUT /tasks/:id'`, async () => {
-    const task = await taskService.save('test')
+    const task = await saveTask('test')
+
     const taskParams = {
       message: 'new message',
       completed: 'Y',
@@ -92,8 +105,29 @@ describe('Testing To-Do List API', () => {
     expect(message).toBe(`Task id ${notExistedId} not found`)
   })
 
+  it(`shoud get error mssage when 'PUT /tasks/:id' use not availed Id`, async () => {
+    const notAvailedId = '123456'
+    const taskParams = {
+      message: 'not availed',
+      completed: 'Y',
+      order: 666
+    }
+
+    const response = await server.inject({
+      url: `${urlPath}/${notAvailedId}`,
+      method: 'PUT',
+      payload: taskParams
+    })
+
+    expect(response.statusCode).toBe(400)
+
+    const message = getObjectFromBody(response, 'message')
+
+    expect(message).toContain('CastError')
+  })
+
   it(`should completed task when 'PUT /tasks/:id/be-done'`, async () => {
-    const task = await taskService.save('test')
+    const task = await saveTask('test')
     const response = await server.inject({
       url: `${urlPath}/${task.id}/be-done`,
       method: 'PUT'
@@ -124,7 +158,7 @@ describe('Testing To-Do List API', () => {
   })
 
   it(`should delete task when 'DELETE /tasks/:id'`, async () => {
-    const task = await taskService.save('test')
+    const task = await saveTask('test')
     const response = await server.inject({
       url: `${urlPath}/${task.id}`,
       method: 'DELETE'
@@ -132,7 +166,13 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(204)
 
-    let beNull = await taskService.findById(task.id)
+    let beNull = await pipe(
+      taskService.findById(task.id),
+      TE.match(
+        error => { throw error },
+        task => task
+      )
+    )()
 
     expect(beNull).toBeNull()
   })
@@ -172,7 +212,13 @@ describe('Testing To-Do List API', () => {
     const tasks = await createListTask(messages)
 
     await Promise.all(tasks.map(async t =>
-      await taskService.completedById(t.id)
+      await pipe(
+        taskService.completedById(t.id),
+        TE.match(
+          error => { throw error },
+          task => task
+        )
+      )()
     ))
 
     const response = await server.inject({
@@ -212,7 +258,13 @@ describe('Testing To-Do List API', () => {
     expect(result.nMatched).toBe(messages.length)
     expect(result.nModified).toBe(messages.length)
 
-    const unCompletedTasks = await taskService.getUnCompletedTasks()
+    const unCompletedTasks = await pipe(
+      taskService.getUnCompletedTasks(),
+      TE.match(
+        error => { throw error },
+        tasks => tasks
+      )
+    )()
 
     orderParams.forEach(p =>
       expect(
@@ -222,11 +274,11 @@ describe('Testing To-Do List API', () => {
   })
 
   const createListTask = async (messages: string[]): Promise<Task[]> => {
-    let task: Task[] = []
+    let tasks: Task[] = []
     await Promise.all(messages.map(async m =>
-      task.push(await taskService.save(m))
+      tasks.push(await saveTask(m))
     ))
-    return task
+    return tasks
   }
 
   const getObjectFromBody = (response: LightMyRequestResponse, objectName: string): any => {
