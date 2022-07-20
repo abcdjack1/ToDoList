@@ -1,0 +1,12 @@
+# some output
+/build
+/coverage
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# Visual Studio Code
+.vscode/*
+.history/*

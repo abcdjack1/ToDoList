@@ -1,0 +1,305 @@
+openapi: 3.0.0
+info:
+  title: To-Do List API
+  description: Operation for Tasks.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8081/v1
+    description: for develop
+paths:
+  /tasks:
+    post:
+      summary: Add new task
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+            example: { "message": "test task message" }
+      responses:
+        "201":
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/Task"
+              example:
+                task:
+                  {
+                    "id": "62d44b90b928882b63cadbe2",
+                    "message": "test task message",
+                    "completed": "N",
+                    "order": "6",
+                  }
+  /tasks/{id}:
+    put:
+      summary: Update task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              $ref: "#/components/schemas/TaskParams"
+            example:
+              { "message": "test task message", "completed": "N", "order": 10 }
+      responses:
+        "200":
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/Task"
+              example:
+                task:
+                  {
+                    "id": "62d44b90b928882b63cadbe2",
+                    "message": "test task message",
+                    "completed": "N",
+                    "order": 10,
+                  }
+        "400":
+          description: Task id not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/400ErrorResponse"
+              example:
+                task: { message: "Task id 62d44b90b928882b63cadbe2 not found" }
+        "500":
+          description: Task id not availed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/500ErrorResponse"
+              example:
+                {
+                  "statusCode": 500,
+                  "error": "Internal Server Error",
+                  "message": 'Cast to ObjectId failed for value "651651" (type string) at path "_id" for model "TaskModel"',
+                }
+    delete:
+      summary: Delete task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Successful
+        "400":
+          description: Task id not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/400ErrorResponse"
+              example:
+                task: { message: "Task id 62d44b90b928882b63cadbe2 not found" }
+        "500":
+          description: Task id not availed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/500ErrorResponse"
+              example:
+                {
+                  "statusCode": 500,
+                  "error": "Internal Server Error",
+                  "message": 'Cast to ObjectId failed for value "notAvailedId" (type string) at path "_id" for model "TaskModel"',
+                }
+  /tasks/{id}/be-done:
+    put:
+      summary: Complete task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/Task"
+              example:
+                task:
+                  {
+                    "id": "62d44b90b928882b63cadbe2",
+                    "message": "test task message",
+                    "completed": "Y",
+                    "order": 10,
+                  }
+  /tasks/to-do:
+    get:
+      summary: Get uncompleted tasks
+      responses:
+        "200":
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+              example:
+                tasks:
+                  [
+                    {
+                      "id": "62d44b90b928882b63cadbe2",
+                      "message": "test task message",
+                      "completed": "N",
+                      "order": 0,
+                    },
+                    {
+                      "id": "62d44c3d6b3fc4f516d2f6a0",
+                      "message": "test task message2",
+                      "completed": "N",
+                      "order": 1,
+                    },
+                  ]
+  /tasks/be-done:
+    get:
+      summary: Get completed tasks
+      responses:
+        "200":
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+              example:
+                tasks:
+                  [
+                    {
+                      "id": "62d44b90b928882b63cadbe2",
+                      "message": "test task message",
+                      "completed": "Y",
+                      "order": 0,
+                    },
+                    {
+                      "id": "62d44c3d6b3fc4f516d2f6a0",
+                      "message": "test task message2",
+                      "completed": "Y",
+                      "order": 1,
+                    },
+                  ]
+  /tasks/orders:
+    put:
+      summary: Reorder tasks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  order:
+                    type: number
+            example:
+              [
+                { "id": "62d44b90b928882b63cadbe2", "order": 10 },
+                { "id": "62d44c3d6b3fc4f516d2f6a0", "order": 20 },
+              ]
+      responses:
+        "200":
+          description: Successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      ok:
+                        type: number
+                      nMatched:
+                        type: number
+                      nModified:
+                        type: number
+              example:
+                task: { "ok": 1, "nMatched": 2, "nModified": 2 }
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+        message:
+          type: string
+        completed:
+          type: string
+        order:
+          type: number
+    TaskParams:
+      properties:
+        message:
+          type: string
+        completed:
+          type: string
+        order:
+          type: number
+      required:
+        - message
+        - completed
+        - order
+    400ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+    500ErrorResponse:
+      type: object
+      properties:
+        statusCode:
+          type: number
+        error:
+          type: string
+        message:
+          type: string

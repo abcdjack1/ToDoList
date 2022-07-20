@@ -1,0 +1,13 @@
+# some output
+/dist
+/coverage
+/.angular
+
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
+
+# Visual Studio Code
+.vscode/*
+.history/*
