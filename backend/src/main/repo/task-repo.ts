@@ -34,42 +34,42 @@ export class TaskRepoImpl implements TaskRepo {
   save(task: TaskParams): TE.TaskEither<Error, Task> {
     return TE.tryCatch(
       () => TaskModel.create(task),
-      this.throwError
+      this.throwNewError
     )
   }
 
   updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, taskParam, { new: true }).exec(),
-      this.throwError
+      this.throwNewError
     )
   }
 
   completedById(id: string): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, { completed: 'Y' }, { new: true }).exec(),
-      this.throwError
+      this.throwNewError
     )
   }
 
   deleteById(id: string): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findByIdAndRemove(id).exec(),
-      this.throwError
+      this.throwNewError
     )
   }
 
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]> {
     return TE.tryCatch(
       () => TaskModel.find({ completed: 'N' }).sort('order').exec(),
-      this.throwError
+      this.throwNewError
     )
   }
 
   getCompletedTasks(): TE.TaskEither<Error, Task[]> {
     return TE.tryCatch(
       () => TaskModel.find({ completed: 'Y' }).sort('updateAt').exec(),
-      this.throwError
+      this.throwNewError
     )
   }
 
@@ -87,7 +87,7 @@ export class TaskRepoImpl implements TaskRepo {
     const executeBulkWrite = (writeOperations: any[]) => {
       return TE.tryCatch(
         () => TaskModel.bulkWrite(writeOperations),
-        this.throwError
+        this.throwNewError
       )
     }
 
@@ -101,17 +101,17 @@ export class TaskRepoImpl implements TaskRepo {
   getMaxOrderTask(): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findOne().sort({ 'order': -1 }).exec(),
-      this.throwError
+      this.throwNewError
     )
   }
 
   findById(id: string): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findById(id).exec(),
-      this.throwError
+      this.throwNewError
     )
   }
 
-  throwError = (error: any) => new Error(error)
+  throwNewError = (error: any) => new Error(error)
 
 }
