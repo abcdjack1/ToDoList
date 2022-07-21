@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  toDoListBackendUrl: ''
+  toDoListBackendUrl: 'v1'
 };
