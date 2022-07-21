@@ -2,17 +2,17 @@
 
 ## Environmental preparation
 
-MongoDB:  
+* MongoDB:  
 You can run with docker easier with following command.  
-`docker run --name db -d -p 27017:27017 mongo`  
+    `docker run --name db -d -p 27017:27017 mongo`  
 more details via [Mongo - Official Image](https://hub.docker.com/_/mongo)
 
-NodeJS:
+* NodeJS:  
 Download with [Node.JS](https://nodejs.org/en/)
 
 ## install dependencis
 
-Run `cd frontend` & `npm i`
+Run `cd frontend` & `npm i`  
 Run `cd backend` & `npm i`  
 
 ## Running unit tests
@@ -24,3 +24,4 @@ Run `cd backend` & `npm run test`
 
 Run `cd frontend` & `npm run build`  
 Run `cd backend` & `npm start`
+Navigate to `http://localhost:8081/`
