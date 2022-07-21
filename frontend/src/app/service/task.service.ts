@@ -39,11 +39,11 @@ export class ToDoService {
   }
 
   async delete(id: string) {
-    const result = await lastValueFrom(this.http.delete<{ task: Task }>(`${this.tasksApiUtl}/${id}`, {}))
+    await lastValueFrom(this.http.delete<{ task: Task }>(`${this.tasksApiUtl}/${id}`, {}))
   }
 
   async reorder(orderParams: any[]) {
-    const result = await lastValueFrom(this.http.put<{ task: Task }>(`${this.tasksApiUtl}/orders`, orderParams))
+    await lastValueFrom(this.http.put<{ task: Task }>(`${this.tasksApiUtl}/orders`, orderParams))
   }
 
 }
