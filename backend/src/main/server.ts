@@ -1,6 +1,5 @@
 import fastify, { FastifyInstance } from 'fastify'
 import { FastifyListenOptions } from 'fastify/types/instance'
-import { dbConnection } from './config/db-handler'
 import { EnvConfig } from './config/env-provider'
 import { TaskRouter } from './route/task-route'
 import fastifyCors from '@fastify/cors'
