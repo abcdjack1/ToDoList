@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { lastValueFrom } from 'rxjs';
-import { Tasks, Task } from 'src/app/types/to-do-task';
+import { Tasks, Task } from 'src/app/types/tasks';
 import { environment } from 'src/environments/environment';
 
 @Injectable({

@@ -8,8 +8,8 @@ import { FormsModule } from '@angular/forms'
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
 
 import { ToDoListComponent } from './to-do-list.component'
-import { Task } from 'src/app/types/to-do-task'
-import { ToDoService } from 'src/app/service/to-do.service'
+import { Task } from 'src/app/types/tasks'
+import { ToDoService } from 'src/app/service/task.service'
 
 
 describe('ToDoListComponent', () => {

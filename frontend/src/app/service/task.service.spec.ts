@@ -1,7 +1,7 @@
 import { HttpClientModule } from '@angular/common/http'
 import { TestBed } from '@angular/core/testing';
 
-import { ToDoService } from './to-do.service';
+import { ToDoService } from './task.service';
 
 describe('ToDoService', () => {
   let service: ToDoService;
