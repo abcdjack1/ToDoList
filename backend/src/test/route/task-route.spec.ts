@@ -123,7 +123,7 @@ describe('Testing To-Do List API', () => {
 
     const message = getObjectFromBody(response, 'message')
 
-    expect(message).toContain('CastError')
+    expect(message).toBe(`Task ID ${notAvailedId} is not availed.`)
   })
 
   it(`should completed task when 'PUT /tasks/:id/be-done'`, async () => {

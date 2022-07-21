@@ -41,21 +41,21 @@ export class TaskRepoImpl implements TaskRepo {
   updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, taskParam, { new: true }).exec(),
-      this.throwNewError
+      (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
     )
   }
 
   completedById(id: string): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, { completed: 'Y' }, { new: true }).exec(),
-      this.throwNewError
+      (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
     )
   }
 
   deleteById(id: string): TE.TaskEither<Error, Task | null> {
     return TE.tryCatch(
       () => TaskModel.findByIdAndRemove(id).exec(),
-      this.throwNewError
+      (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
     )
   }
 
@@ -113,5 +113,10 @@ export class TaskRepoImpl implements TaskRepo {
   }
 
   throwNewError = (error: any) => new Error(error)
+
+  throwIdIsNotAvailedErrorIfCastError = (error: any, id: string) =>
+    error.name === 'CastError' ?
+      new Error(`Task ID ${id} is not availed.`) :
+      error
 
 }

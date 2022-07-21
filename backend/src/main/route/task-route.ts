@@ -1,4 +1,4 @@
-import { FastifyInstance, RouteShorthandOptions, FastifyReply } from 'fastify'
+import { FastifyInstance, RouteShorthandOptions } from 'fastify'
 import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { TaskService, TaskServiceImpl } from '../service/task-service'
