@@ -214,13 +214,7 @@ describe('Testing To-Do List API', () => {
 
     const response = await callAPI(`${urlPath}/orders`, 'PUT', orderParams)
 
-    expect(response.statusCode).toBe(200)
-
-    const result = getObjectFromBody(response, 'result')
-
-    expect(result.ok).toBe(1)
-    expect(result.nMatched).toBe(messages.length)
-    expect(result.nModified).toBe(messages.length)
+    expect(response.statusCode).toBe(204)
 
     const unCompletedTasks = await pipe(
       taskService.getUnCompletedTasks(),
@@ -235,6 +229,24 @@ describe('Testing To-Do List API', () => {
         unCompletedTasks.find(t => t.id == p.id)?.order
       ).toBe(p.order)
     )
+  })
+
+  it(`should reorder tasks when 'PUT /tasks/orders'`, async () => {
+    const messages = ['test1', 'test2']
+    const tasks = await createListTask(messages)
+
+    const orderParams: OrderParams[] = []
+    tasks.forEach(t => orderParams.push({ id: t.id, order: t.order }))
+
+    orderParams[0].id = '62d44b90b928882b63cadbe2'
+
+    const response = await callAPI(`${urlPath}/orders`, 'PUT', orderParams)
+
+    expect(response.statusCode).toBe(400)
+
+    const result = getObjectFromBody(response, 'message')
+
+    expect(result).toBe('Just matched 1 data.')
   })
 
   const callAPI = async (url: any, method: any, payload?: any) => {

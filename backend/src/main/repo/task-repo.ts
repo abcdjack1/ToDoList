@@ -115,7 +115,7 @@ export class TaskRepoImpl implements TaskRepo {
   throwNewError = (error: any) => new Error(error)
 
   throwIdIsNotAvailedErrorIfCastError = (error: any, id: string) =>
-    error.name === 'CastError' ?
+    error.name == 'CastError' ?
       new Error(`Task ID ${id} is not availed.`) :
       error
 

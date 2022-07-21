@@ -76,19 +76,16 @@ export const TaskRouter = (
   })
 
   server.put<{ Body: OrderParams[] }>('/orders', async (request, response) => {
-    const genResponseBody = (bulkWriteResult: any) => {
-      return {
-        ok: bulkWriteResult.ok,
-        nMatched: bulkWriteResult.nMatched,
-        nModified: bulkWriteResult.nModified
-      }
-    }
     return await pipe(
       toDoTaskService.reorder(request.body),
       TE.match(
         error => { throw error },
         bulkWriteResult => {
-          return response.status(200).send({ result: genResponseBody(bulkWriteResult) })
+          if (bulkWriteResult.nMatched == request.body.length) {
+            return response.status(204).send()
+          } else {
+            return response400WithMessage(response, `Just matched ${bulkWriteResult.nMatched} data.`)
+          }
         }
       )
     )()
