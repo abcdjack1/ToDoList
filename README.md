@@ -3,12 +3,12 @@
 ## Environmental preparation
 
 * MongoDB:  
-You can run with docker easier with following command.  
+You can run following command in docker.  
 `docker run --name db -d -p 27017:27017 mongo`  
 more details via [Mongo - Official Image](https://hub.docker.com/_/mongo)
 
 * NodeJS:  
-Download with [Node.JS](https://nodejs.org/en/) and install [ng](https://www.npmjs.com/package/@angular/cli)
+Download [Node.JS](https://nodejs.org/en/) and install [ng](https://www.npmjs.com/package/@angular/cli)
 
 ## Install dependencis
 
