@@ -31,13 +31,7 @@ describe('Testing To-Do List API', () => {
 
   it(`should get new task when 'POST /tasks'`, async () => {
     const message = 'test'
-    const response = await server.inject({
-      url: `${urlPath}`,
-      method: 'POST',
-      payload: {
-        message: message
-      }
-    })
+    const response = await callAPI(`${urlPath}`, 'POST', { message: message })
 
     expect(response.statusCode).toBe(201)
 
@@ -50,7 +44,7 @@ describe('Testing To-Do List API', () => {
   })
 
   const saveTask = async (message: string) => {
-    return await pipe(
+    return pipe(
       taskService.save(message),
       TE.match(
         error => { throw error },
@@ -68,11 +62,7 @@ describe('Testing To-Do List API', () => {
       order: 666
     }
 
-    const response = await server.inject({
-      url: `${urlPath}/${task.id}`,
-      method: 'PUT',
-      payload: taskParams
-    })
+    const response = await callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams)
 
     expect(response.statusCode).toBe(200)
 
@@ -92,11 +82,7 @@ describe('Testing To-Do List API', () => {
       order: 666
     }
 
-    const response = await server.inject({
-      url: `${urlPath}/${notExistedId}`,
-      method: 'PUT',
-      payload: taskParams
-    })
+    const response = await callAPI(`${urlPath}/${notExistedId}`, 'PUT', taskParams)
 
     expect(response.statusCode).toBe(400)
 
@@ -113,11 +99,7 @@ describe('Testing To-Do List API', () => {
       order: 666
     }
 
-    const response = await server.inject({
-      url: `${urlPath}/${notAvailedId}`,
-      method: 'PUT',
-      payload: taskParams
-    })
+    const response = await callAPI(`${urlPath}/${notAvailedId}`, 'PUT', taskParams)
 
     expect(response.statusCode).toBe(400)
 
@@ -128,10 +110,8 @@ describe('Testing To-Do List API', () => {
 
   it(`should completed task when 'PUT /tasks/:id/be-done'`, async () => {
     const task = await saveTask('test')
-    const response = await server.inject({
-      url: `${urlPath}/${task.id}/be-done`,
-      method: 'PUT'
-    })
+
+    const response = await callAPI(`${urlPath}/${task.id}/be-done`, 'PUT')
 
     expect(response.statusCode).toBe(200)
 
@@ -145,10 +125,8 @@ describe('Testing To-Do List API', () => {
 
   it(`shoud get error mssage when 'PUT /tasks/:id/be-done' use not existed Id`, async () => {
     const notExistedId = '62d44b90b928882b63cadbe2'
-    const response = await server.inject({
-      url: `${urlPath}/${notExistedId}/be-done`,
-      method: 'PUT'
-    })
+
+    const response = await callAPI(`${urlPath}/${notExistedId}/be-done`, 'PUT')
 
     expect(response.statusCode).toBe(400)
 
@@ -159,10 +137,8 @@ describe('Testing To-Do List API', () => {
 
   it(`should delete task when 'DELETE /tasks/:id'`, async () => {
     const task = await saveTask('test')
-    const response = await server.inject({
-      url: `${urlPath}/${task.id}`,
-      method: 'DELETE'
-    })
+
+    const response = await callAPI(`${urlPath}/${task.id}`, 'DELETE')
 
     expect(response.statusCode).toBe(204)
 
@@ -179,10 +155,8 @@ describe('Testing To-Do List API', () => {
 
   it(`shoud get error mssage when 'DELETE /tasks/:id' use not existed Id`, async () => {
     const notExistedId = '62d44b90b928882b63cadbe2'
-    const response = await server.inject({
-      url: `${urlPath}/${notExistedId}`,
-      method: 'DELETE'
-    })
+
+    const response = await callAPI(`${urlPath}/${notExistedId}`, 'DELETE')
 
     expect(response.statusCode).toBe(400)
 
@@ -195,10 +169,7 @@ describe('Testing To-Do List API', () => {
     const messages = ['test1', 'test2', 'test3']
     await createListTask(messages)
 
-    const response = await server.inject({
-      url: `${urlPath}/to-do`,
-      method: 'GET'
-    })
+    const response = await callAPI(`${urlPath}/to-do`, 'GET')
 
     expect(response.statusCode).toBe(200)
 
@@ -211,7 +182,7 @@ describe('Testing To-Do List API', () => {
     const messages = ['test1', 'test2', 'test3']
     const tasks = await createListTask(messages)
 
-    await Promise.all(tasks.map(async t =>
+    tasks.map(async t =>
       await pipe(
         taskService.completedById(t.id),
         TE.match(
@@ -219,12 +190,9 @@ describe('Testing To-Do List API', () => {
           task => task
         )
       )()
-    ))
+    )
 
-    const response = await server.inject({
-      url: `${urlPath}/be-done`,
-      method: 'GET'
-    })
+    const response = await callAPI(`${urlPath}/be-done`, 'GET')
 
     expect(response.statusCode).toBe(200)
 
@@ -244,11 +212,7 @@ describe('Testing To-Do List API', () => {
     orderParams[1].order = 100
     orderParams[2].order = 1000
 
-    const response = await server.inject({
-      url: `${urlPath}/orders`,
-      method: 'PUT',
-      payload: orderParams
-    })
+    const response = await callAPI(`${urlPath}/orders`, 'PUT', orderParams)
 
     expect(response.statusCode).toBe(200)
 
@@ -272,6 +236,14 @@ describe('Testing To-Do List API', () => {
       ).toBe(p.order)
     )
   })
+
+  const callAPI = async (url: any, method: any, payload?: any) => {
+    return await server.inject({
+      url: url,
+      method: method,
+      payload: payload
+    })
+  }
 
   const createListTask = async (messages: string[]): Promise<Task[]> => {
     let tasks: Task[] = []
