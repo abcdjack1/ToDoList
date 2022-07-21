@@ -8,7 +8,7 @@ You can run with docker easier with following command.
 more details via [Mongo - Official Image](https://hub.docker.com/_/mongo)
 
 * NodeJS:  
-Download with [Node.JS](https://nodejs.org/en/)
+Download with [Node.JS](https://nodejs.org/en/) and install [ng](https://www.npmjs.com/package/@angular/cli)
 
 ## Install dependencis
 
