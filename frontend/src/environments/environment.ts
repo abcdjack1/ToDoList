@@ -4,7 +4,7 @@
 
 export const environment = {
   production: false,
-  toDoListBackendUrl: 'http://localhost:8081/v1'
+  toDoListBackendUrl: 'http://localhost:8080/v1'
 };
 
 /*

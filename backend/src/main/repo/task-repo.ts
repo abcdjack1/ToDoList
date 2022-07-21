@@ -68,7 +68,7 @@ export class TaskRepoImpl implements TaskRepo {
 
   getCompletedTasks(): TE.TaskEither<Error, Task[]> {
     return TE.tryCatch(
-      () => TaskModel.find({ completed: 'Y' }).sort('updateAt').exec(),
+      () => TaskModel.find({ completed: 'Y' }).sort({ 'updatedAt': -1 }).exec(),
       this.throwNewError
     )
   }

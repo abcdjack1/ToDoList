@@ -4,7 +4,7 @@ info:
   description: Operation for Tasks.
   version: 1.0.0
 servers:
-  - url: http://localhost:8081/v1
+  - url: http://localhost:8080/v1
     description: for develop
 paths:
   /tasks:
@@ -37,6 +37,15 @@ paths:
                     "completed": "N",
                     "order": "6",
                   }
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/400ErrorResponse"
   /tasks/{id}:
     put:
       summary: Update task
@@ -73,7 +82,7 @@ paths:
                     "order": 10,
                   }
         "400":
-          description: Task id not found
+          description: Task id not found or not availed.
           content:
             application/json:
               schema:
@@ -83,21 +92,6 @@ paths:
                     $ref: "#/components/schemas/400ErrorResponse"
               example:
                 task: { message: "Task id 62d44b90b928882b63cadbe2 not found" }
-        "500":
-          description: Task id not availed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  task:
-                    $ref: "#/components/schemas/500ErrorResponse"
-              example:
-                {
-                  "statusCode": 500,
-                  "error": "Internal Server Error",
-                  "message": 'Cast to ObjectId failed for value "651651" (type string) at path "_id" for model "TaskModel"',
-                }
     delete:
       summary: Delete task
       parameters:
@@ -110,7 +104,7 @@ paths:
         "204":
           description: Successful
         "400":
-          description: Task id not found
+          description: Task id not found or not availed.
           content:
             application/json:
               schema:
@@ -120,21 +114,6 @@ paths:
                     $ref: "#/components/schemas/400ErrorResponse"
               example:
                 task: { message: "Task id 62d44b90b928882b63cadbe2 not found" }
-        "500":
-          description: Task id not availed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  task:
-                    $ref: "#/components/schemas/500ErrorResponse"
-              example:
-                {
-                  "statusCode": 500,
-                  "error": "Internal Server Error",
-                  "message": 'Cast to ObjectId failed for value "notAvailedId" (type string) at path "_id" for model "TaskModel"',
-                }
   /tasks/{id}/be-done:
     put:
       summary: Complete task
@@ -162,6 +141,17 @@ paths:
                     "completed": "Y",
                     "order": 10,
                   }
+        "400":
+          description: Task id not found or not availed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/400ErrorResponse"
+              example:
+                task: { message: "Task id 62d44b90b928882b63cadbe2 not found" }
   /tasks/to-do:
     get:
       summary: Get uncompleted tasks
@@ -193,6 +183,15 @@ paths:
                       "order": 1,
                     },
                   ]
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/400ErrorResponse"
   /tasks/be-done:
     get:
       summary: Get completed tasks
@@ -224,6 +223,15 @@ paths:
                       "order": 1,
                     },
                   ]
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task:
+                    $ref: "#/components/schemas/400ErrorResponse"
   /tasks/orders:
     put:
       summary: Reorder tasks
@@ -245,24 +253,19 @@ paths:
                 { "id": "62d44c3d6b3fc4f516d2f6a0", "order": 20 },
               ]
       responses:
-        "200":
+        "204":
           description: Successful
+        "400":
+          description: matched data less than request
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  result:
-                    type: object
-                    properties:
-                      ok:
-                        type: number
-                      nMatched:
-                        type: number
-                      nModified:
-                        type: number
+                  task:
+                    $ref: "#/components/schemas/400ErrorResponse"
               example:
-                task: { "ok": 1, "nMatched": 2, "nModified": 2 }
+                task: { message: "Just matched 1 data." }
 
 components:
   schemas:
