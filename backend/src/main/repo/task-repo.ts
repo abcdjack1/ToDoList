@@ -24,7 +24,7 @@ export class TaskRepoImpl implements TaskRepo {
 
   static taskRepoImpl: TaskRepo
 
-  static build(): TaskRepo {
+  static getInstance(): TaskRepo {
     if (!this.taskRepoImpl) {
       this.taskRepoImpl = new TaskRepoImpl()
     }

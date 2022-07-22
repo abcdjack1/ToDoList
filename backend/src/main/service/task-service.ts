@@ -22,11 +22,11 @@ export class TaskServiceImpl implements TaskService {
     //do nothing
   }
 
-  private taskRepo: TaskRepo = TaskRepoImpl.build()
+  private taskRepo: TaskRepo = TaskRepoImpl.getInstance()
 
   static taskService: TaskService
 
-  static create(): TaskService {
+  static getInstance(): TaskService {
     if (!this.taskService) {
       this.taskService = new TaskServiceImpl()
     }
