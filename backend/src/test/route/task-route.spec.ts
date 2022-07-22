@@ -11,8 +11,8 @@ import { pipe } from 'fp-ts/lib/function'
 
 describe('Testing To-Do List API', () => {
   let server: FastifyInstance
-  const urlPath = env.API_VERSION + '/tasks'
-  const taskService = TaskServiceImpl.create()
+  const urlPath = 'v1/tasks'
+  const taskService = TaskServiceImpl.getInstance()
 
   beforeAll(async () => {
     server = startServer(env)

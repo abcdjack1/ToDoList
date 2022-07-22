@@ -33,7 +33,7 @@ export const startServer = (env: EnvConfig): FastifyInstance => {
     root: path.join(__dirname, '../../../frontend/dist/to-do-list'),
   })
 
-  server.register(TaskRouter, { prefix: `/${env.API_VERSION}/tasks` })
+  server.register(TaskRouter, { prefix: `/v1/tasks` })
 
   server.get('/health', async (_, response) => {
     return response.status(200).send({ status: 'active' })

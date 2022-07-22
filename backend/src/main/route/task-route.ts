@@ -9,7 +9,7 @@ export const TaskRouter = (
   _: RouteShorthandOptions,
   done: (error?: Error) => void) => {
 
-  const toDoTaskService: TaskService = TaskServiceImpl.create()
+  const toDoTaskService: TaskService = TaskServiceImpl.getInstance()
 
   server.post<{ Body: { message: string } }>('', async (request, response) => {
     return await pipe(
