@@ -142,15 +142,17 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(204)
 
-    let beNull = await pipe(
-      taskService.findById(task.id),
-      TE.match(
-        error => { throw error },
-        task => task
-      )
-    )()
-
-    expect(beNull).toBeNull()
+    try {
+      await pipe(
+        taskService.findById(task.id),
+        TE.match(
+          error => { throw error },
+          task => task
+        )
+      )()
+    } catch (e: any) {
+      expect(e.message).toBe(`Task id ${task.id} not found`)
+    }
   })
 
   it(`shoud get error mssage when 'DELETE /tasks/:id' use not existed Id`, async () => {

@@ -6,14 +6,14 @@ import { pipe } from 'fp-ts/lib/function'
 
 export interface TaskRepo {
   save(task: TaskParams): TE.TaskEither<Error, Task>
-  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task | null>
-  completedById(id: string): TE.TaskEither<Error, Task | null>
-  deleteById(id: string): TE.TaskEither<Error, Task | null>
+  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task>
+  completedById(id: string): TE.TaskEither<Error, Task>
+  deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
   reorder(orderParam: OrderParams[]): TE.TaskEither<Error, BulkWriteResult>
-  getMaxOrderTask(): TE.TaskEither<Error, Task | null>
-  findById(id: string): TE.TaskEither<Error, Task | null>
+  getMaxOrder(): TE.TaskEither<Error, number>
+  findById(id: string): TE.TaskEither<Error, Task>
 }
 
 export class TaskRepoImpl implements TaskRepo {
@@ -38,24 +38,39 @@ export class TaskRepoImpl implements TaskRepo {
     )
   }
 
-  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task | null> {
-    return TE.tryCatch(
+  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
+    const findByIdAndUpdate = () => TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, taskParam, { new: true }).exec(),
       (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
     )
-  }
 
-  completedById(id: string): TE.TaskEither<Error, Task | null> {
-    return TE.tryCatch(
-      () => TaskModel.findByIdAndUpdate(id, { completed: 'Y' }, { new: true }).exec(),
-      (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
+    return pipe(
+      findByIdAndUpdate(),
+      TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
     )
   }
 
-  deleteById(id: string): TE.TaskEither<Error, Task | null> {
-    return TE.tryCatch(
+  completedById(id: string): TE.TaskEither<Error, Task> {
+    const findByIdAndUpdate = () => TE.tryCatch(
+      () => TaskModel.findByIdAndUpdate(id, { completed: 'Y' }, { new: true }).exec(),
+      (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
+    )
+
+    return pipe(
+      findByIdAndUpdate(),
+      TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
+    )
+  }
+
+  deleteById(id: string): TE.TaskEither<Error, Task> {
+    const findByIdAndRemove = () => TE.tryCatch(
       () => TaskModel.findByIdAndRemove(id).exec(),
       (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
+    )
+
+    return pipe(
+      findByIdAndRemove(),
+      TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
     )
   }
 
@@ -98,17 +113,29 @@ export class TaskRepoImpl implements TaskRepo {
     )
   }
 
-  getMaxOrderTask(): TE.TaskEither<Error, Task | null> {
-    return TE.tryCatch(
+  getMaxOrder(): TE.TaskEither<Error, number> {
+    const findOne = () => TE.tryCatch(
       () => TaskModel.findOne().sort({ 'order': -1 }).exec(),
       this.throwNewError
     )
+
+    return pipe(
+      findOne(),
+      TE.map(t => t == null ? 0 : 1)
+    )
   }
 
-  findById(id: string): TE.TaskEither<Error, Task | null> {
-    return TE.tryCatch(
+  findById(id: string): TE.TaskEither<Error, Task> {
+    const findById = () => TE.tryCatch(
       () => TaskModel.findById(id).exec(),
       this.throwNewError
+    )
+
+    return pipe(
+      findById(),
+      TE.chain(
+        (t) => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t)
+      )
     )
   }
 
@@ -118,5 +145,9 @@ export class TaskRepoImpl implements TaskRepo {
     error.name == 'CastError' ?
       new Error(`Task ID ${id} is not availed.`) :
       error
+
+  taskIdNotFoundError = (id: string) => {
+    return new Error(`Task id ${id} not found`)
+  }
 
 }

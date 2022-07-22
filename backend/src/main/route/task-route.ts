@@ -4,7 +4,6 @@ import { pipe } from 'fp-ts/lib/function'
 import { TaskService, TaskServiceImpl } from '../service/task-service'
 import { IdParams, OrderParams, TaskParams } from '../type/params'
 
-
 export const TaskRouter = (
   server: FastifyInstance,
   _: RouteShorthandOptions,
@@ -16,7 +15,7 @@ export const TaskRouter = (
     return await pipe(
       toDoTaskService.save(request.body.message),
       TE.match(
-        e => response400WithMessage(response, e.message),
+        e => response.status(400).send({ message: e.message }),
         task => response.status(201).send({ task })
       )
     )()
@@ -27,8 +26,8 @@ export const TaskRouter = (
     return await pipe(
       toDoTaskService.update(id, request.body),
       TE.match(
-        e => response400WithMessage(response, e.message),
-        task => resultValidator(task, response, 200, { task }, 400, { message: taskIdNotFound(id) })
+        e => response.status(400).send({ message: e.message }),
+        task => response.status(200).send({ task })
       )
     )()
   })
@@ -38,8 +37,8 @@ export const TaskRouter = (
     return await pipe(
       toDoTaskService.completedById(id),
       TE.match(
-        e => { response400WithMessage(response, e.message) },
-        task => resultValidator(task, response, 200, { task }, 400, { message: taskIdNotFound(id) })
+        e => { response.status(400).send({ message: e.message }) },
+        task => response.status(200).send({ task })
       )
     )()
   })
@@ -49,8 +48,8 @@ export const TaskRouter = (
     return await pipe(
       toDoTaskService.deleteById(id),
       TE.match(
-        e => response400WithMessage(response, e.message),
-        task => resultValidator(task, response, 204, {}, 400, { message: taskIdNotFound(id) })
+        e => response.status(400).send({ message: e.message }),
+        task => response.status(204).send()
       )
     )()
   })
@@ -59,7 +58,7 @@ export const TaskRouter = (
     return await pipe(
       toDoTaskService.getUnCompletedTasks(),
       TE.match(
-        e => response400WithMessage(response, e.message),
+        e => response.status(400).send({ message: e.message }),
         tasks => response.status(200).send({ tasks })
       )
     )()
@@ -69,7 +68,7 @@ export const TaskRouter = (
     return await pipe(
       toDoTaskService.getCompletedTasks(),
       TE.match(
-        e => response400WithMessage(response, e.message),
+        e => response.status(400).send({ message: e.message }),
         tasks => response.status(200).send({ tasks })
       )
     )()
@@ -84,29 +83,12 @@ export const TaskRouter = (
           if (bulkWriteResult.nMatched == request.body.length) {
             return response.status(204).send()
           } else {
-            return response400WithMessage(response, `Just matched ${bulkWriteResult.nMatched} data.`)
+            return response.status(400).send({ message: `Just matched ${bulkWriteResult.nMatched} data.` })
           }
         }
       )
     )()
   })
-
-  const resultValidator = (checkObject: any, response: any, successCode: any,
-    successReturn: any, failedCode: any, failedReturn: any) => {
-    if (checkObject) {
-      return response.status(successCode).send(successReturn)
-    } else {
-      return response.status(failedCode).send(failedReturn)
-    }
-  }
-
-  const response400WithMessage = (response: any, message: string) => {
-    response.status(400).send({ message: message })
-  }
-
-  const taskIdNotFound = (id: string) => {
-    return `Task id ${id} not found`
-  }
 
   done()
 }

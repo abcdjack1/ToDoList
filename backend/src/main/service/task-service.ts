@@ -7,13 +7,13 @@ import { pipe } from 'fp-ts/lib/function'
 
 export interface TaskService {
   save(message: string): TE.TaskEither<Error, Task>
-  update(id: string, task: TaskParams): TE.TaskEither<Error, Task | null>
-  completedById(id: string): TE.TaskEither<Error, Task | null>
-  deleteById(id: string): TE.TaskEither<Error, Task | null>
+  update(id: string, task: TaskParams): TE.TaskEither<Error, Task>
+  completedById(id: string): TE.TaskEither<Error, Task>
+  deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
   reorder(orderParam: OrderParams[]): TE.TaskEither<Error, BulkWriteResult>
-  findById(id: string): TE.TaskEither<Error, Task | null>
+  findById(id: string): TE.TaskEither<Error, Task>
 }
 
 export class TaskServiceImpl implements TaskService {
@@ -34,8 +34,8 @@ export class TaskServiceImpl implements TaskService {
   }
 
   save(message: string): TE.TaskEither<Error, Task> {
-    const getMaxOrderTask = this.taskRepo.getMaxOrderTask()
-    const maxOrderPlusOne = (task: Task | null) => task == null ? 0 : task.order + 1
+    const getMaxOrder = this.taskRepo.getMaxOrder()
+    const maxOrderPlusOne = (maxOrder: number) => maxOrder + 1
     const genTaskBody = (order: number): TaskParams => {
       return {
         message: message,
@@ -46,22 +46,22 @@ export class TaskServiceImpl implements TaskService {
     const saveTask = (task: TaskParams) => this.taskRepo.save(task)
 
     return pipe(
-      getMaxOrderTask,
+      getMaxOrder,
       TE.map(maxOrderPlusOne),
       TE.map(genTaskBody),
       TE.chain(saveTask)
     )
   }
 
-  update(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task | null> {
+  update(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
     return this.taskRepo.updateById(id, taskParam)
   }
 
-  completedById(id: string): TE.TaskEither<Error, Task | null> {
+  completedById(id: string): TE.TaskEither<Error, Task> {
     return this.taskRepo.completedById(id)
   }
 
-  deleteById(id: string): TE.TaskEither<Error, Task | null> {
+  deleteById(id: string): TE.TaskEither<Error, Task> {
     return this.taskRepo.deleteById(id)
   }
 
@@ -77,7 +77,7 @@ export class TaskServiceImpl implements TaskService {
     return this.taskRepo.reorder(orderParams)
   }
 
-  findById(id: string): TE.TaskEither<Error, Task | null> {
+  findById(id: string): TE.TaskEither<Error, Task> {
     return this.taskRepo.findById(id)
   }
 }
