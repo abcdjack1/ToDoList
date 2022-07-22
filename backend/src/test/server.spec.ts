@@ -1,5 +1,4 @@
 import { FastifyInstance } from 'fastify'
-import { env } from '../main/config/env-provider'
 import { startServer } from '../main/server'
 
 describe(' Testing start server', () => {
@@ -7,7 +6,7 @@ describe(' Testing start server', () => {
   let server: FastifyInstance
 
   beforeAll(async () => {
-    server = startServer(env)
+    server = startServer()
     await server.ready()
   })
 

@@ -15,7 +15,7 @@ describe('Testing To-Do List API', () => {
   const taskService = TaskServiceImpl.getInstance()
 
   beforeAll(async () => {
-    server = startServer(env)
+    server = startServer()
     await server.ready()
     await connectTestDB()
   })
