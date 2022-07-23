@@ -3,6 +3,7 @@ import { BulkWriteResult } from 'mongodb'
 import { OrderParams, TaskParams } from '../type/params'
 import { TaskRepo, TaskRepoImpl } from '../repo/task-repo'
 import * as TE from 'fp-ts/TaskEither'
+import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/lib/function'
 
 export interface TaskService {
@@ -27,10 +28,18 @@ export class TaskServiceImpl implements TaskService {
   static taskService: TaskService
 
   static getInstance(): TaskService {
-    if (!this.taskService) {
+    const newInstance = () => {
       this.taskService = new TaskServiceImpl()
+      return this.taskService
     }
-    return this.taskService
+
+    return pipe(
+      this.taskService,
+      O.fromNullable,
+      O.getOrElse(
+        newInstance
+      )
+    )
   }
 
   save(message: string): TE.TaskEither<Error, Task> {
