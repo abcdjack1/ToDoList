@@ -192,7 +192,6 @@ describe('Testing To-Do List API', () => {
     const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
 
     expect(toDoTasks.length).toBe(3)
-    toDoTasks.forEach((t, index) => expect(t.message).toBe(messages[index]))
   })
 
   it(`should reorder tasks when 'PUT /tasks/orders'`, async () => {
@@ -200,6 +199,7 @@ describe('Testing To-Do List API', () => {
     const tasks = await createListTask(messages)
 
     const orderInfos: OrderInfos = []
+
     tasks.forEach(t => orderInfos.push({ id: t.id, order: t.order }))
 
     orderInfos[0].order = 10
@@ -235,6 +235,7 @@ describe('Testing To-Do List API', () => {
     const tasks = await createListTask(messages)
 
     const orderInfos: OrderInfos = []
+
     tasks.forEach(t => orderInfos.push({ id: t.id, order: t.order }))
 
     orderInfos[0].id = '62d44b90b928882b63cadbe2'
@@ -267,12 +268,10 @@ describe('Testing To-Do List API', () => {
   }
 
   const createListTask = (messages: string[]) => {
-    const saveTask = (message: string) => {
-      return taskService.save(message)
-    }
+    const saveTask = (message: string) => taskService.save(message)
     return pipe(
       messages,
-      TE.traverseSeqArray(saveTask),
+      TE.traverseArray(saveTask),
       TE.match(
         (e) => { throw e },
         (t) => t
