@@ -5,7 +5,10 @@ import { clearTestDB, closeTestDB, connectTestDB } from '../config/test-db-handl
 import { Response as LightMyRequestResponse } from 'light-my-request'
 import { TaskServiceImpl } from '../../main/service/task-service'
 import * as TE from 'fp-ts/TaskEither'
+import { task as T, array as A } from "fp-ts";
 import { pipe } from 'fp-ts/lib/function'
+import { map } from 'fp-ts/lib/Functor'
+import { access, constants } from "fs";
 
 describe('Testing To-Do List API', () => {
   let server: FastifyInstance
@@ -40,16 +43,6 @@ describe('Testing To-Do List API', () => {
     expect(task.completed).toBe('N')
     expect(task.order).not.toBeNull()
   })
-
-  const saveTask = async (message: string) => {
-    return pipe(
-      taskService.save(message),
-      TE.match(
-        error => { throw error },
-        task => task
-      )
-    )()
-  }
 
   it(`should update task when 'PUT /tasks/:id'`, async () => {
     const task = await saveTask('test')
@@ -175,7 +168,7 @@ describe('Testing To-Do List API', () => {
 
     const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
 
-    toDoTasks.forEach((t, index) => expect(t.message).toBe(messages[index]))
+    expect(toDoTasks.length).toBe(messages.length)
   })
 
   it(`should get completed tasks when 'GET /tasks/be-done'`, async () => {
@@ -199,6 +192,7 @@ describe('Testing To-Do List API', () => {
     const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
 
     expect(toDoTasks.length).toBe(3)
+    toDoTasks.forEach((t, index) => expect(t.message).toBe(messages[index]))
   })
 
   it(`should reorder tasks when 'PUT /tasks/orders'`, async () => {
@@ -220,13 +214,14 @@ describe('Testing To-Do List API', () => {
 
     expect(modified).toBe(orderInfos.length)
 
-    const unCompletedTasks = await pipe(
-      taskService.getUnCompletedTasks(),
-      TE.match(
-        error => { throw error },
-        tasks => tasks
-      )
-    )()
+    const unCompletedTasks = await Promise.all(
+      await pipe(
+        taskService.getUnCompletedTasks(),
+        TE.match(
+          error => { throw error },
+          tasks => tasks
+        )
+      )())
 
     orderInfos.forEach(i =>
       expect(
@@ -235,7 +230,7 @@ describe('Testing To-Do List API', () => {
     )
   })
 
-  it(`should reorder tasks when 'PUT /tasks/orders'`, async () => {
+  it(`should reorder tasks failed when 'PUT /tasks/orders' use not exist id`, async () => {
     const messages = ['test1', 'test2']
     const tasks = await createListTask(messages)
 
@@ -261,12 +256,28 @@ describe('Testing To-Do List API', () => {
     })
   }
 
-  const createListTask = async (messages: string[]): Promise<Task[]> => {
-    let tasks: Task[] = []
-    await Promise.all(messages.map(async m =>
-      tasks.push(await saveTask(m))
-    ))
-    return tasks
+  const saveTask = (message: string) => {
+    return pipe(
+      taskService.save(message),
+      TE.match(
+        error => { throw error },
+        task => task
+      )
+    )()
+  }
+
+  const createListTask = (messages: string[]) => {
+    const saveTask = (message: string) => {
+      return taskService.save(message)
+    }
+    return pipe(
+      messages,
+      TE.traverseSeqArray(saveTask),
+      TE.match(
+        (e) => { throw e },
+        (t) => t
+      )
+    )()
   }
 
   const getObjectFromBody = (response: LightMyRequestResponse, objectName: string): any => {

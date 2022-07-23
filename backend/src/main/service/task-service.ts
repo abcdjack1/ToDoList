@@ -1,10 +1,9 @@
 import { Task } from '../type/task-type'
-import { BulkWriteResult } from 'mongodb'
 import { OrderInfos, TaskParams } from '../type/task-type'
 import { TaskRepo, TaskRepoImpl } from '../repo/task-repo'
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/Option'
-import { pipe } from 'fp-ts/lib/function'
+import { pipe, flow } from 'fp-ts/lib/function'
 
 export interface TaskService {
   save(message: string): TE.TaskEither<Error, Task>
@@ -28,21 +27,23 @@ export class TaskServiceImpl implements TaskService {
   static taskService: TaskService
 
   static getInstance(): TaskService {
-    const newInstance = () => {
-      this.taskService = new TaskServiceImpl()
-      return this.taskService
-    }
-
     return pipe(
       this.taskService,
       O.fromNullable,
       O.getOrElse(
-        newInstance
+        this.newInstance
       )
     )
   }
 
+  static newInstance = () => {
+    this.taskService = new TaskServiceImpl()
+    return this.taskService
+  }
+
+
   save(message: string): TE.TaskEither<Error, Task> {
+    this.taskRepo = TaskRepoImpl.getInstance()
     const getMaxOrder = this.taskRepo.getMaxOrder()
     const maxOrderPlusOne = (maxOrder: number) => maxOrder + 1
     const genTaskBody = (order: number): TaskParams => {

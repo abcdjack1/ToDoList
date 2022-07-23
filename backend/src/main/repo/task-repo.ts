@@ -1,4 +1,3 @@
-import { BulkWriteResult } from 'mongodb'
 import TaskModel from '../model/task-model'
 import { OrderInfos, TaskParams, Task } from '../type/task-type'
 import * as TE from 'fp-ts/TaskEither'
@@ -26,18 +25,18 @@ export class TaskRepoImpl implements TaskRepo {
   static taskRepoImpl: TaskRepo
 
   static getInstance(): TaskRepo {
-    const newInstance = () => {
-      this.taskRepoImpl = new TaskRepoImpl()
-      return this.taskRepoImpl
-    }
-
     return pipe(
       this.taskRepoImpl,
       O.fromNullable,
       O.getOrElse(
-        newInstance
+        this.newInstance
       )
     )
+  }
+
+  static newInstance = () => {
+    this.taskRepoImpl = new TaskRepoImpl()
+    return this.taskRepoImpl
   }
 
   save(task: TaskParams): TE.TaskEither<Error, Task> {
