@@ -38,6 +38,10 @@ export const reorderTasksBodyScehma = Type.Array(
   })
 )
 
+export const modifiedSchema = Type.Object({
+  modified: Type.Number()
+})
+
 export const postSaveTaskOption = {
   schema: {
     body: messageSchema,
@@ -89,7 +93,7 @@ export const putReorderTasksOption = {
   schema: {
     body: reorderTasksBodyScehma,
     response: {
-      204: {}
+      200: modifiedSchema
     }
   }
 }

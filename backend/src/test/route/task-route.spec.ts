@@ -214,7 +214,11 @@ describe('Testing To-Do List API', () => {
 
     const response = await callAPI(`${urlPath}/orders`, 'PUT', orderInfos)
 
-    expect(response.statusCode).toBe(204)
+    expect(response.statusCode).toBe(200)
+
+    const modified = getObjectFromBody(response, 'modified')
+
+    expect(modified).toBe(orderInfos.length)
 
     const unCompletedTasks = await pipe(
       taskService.getUnCompletedTasks(),

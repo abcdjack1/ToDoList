@@ -12,7 +12,7 @@ export interface TaskRepo {
   deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
-  reorder(orderParam: OrderInfos): TE.TaskEither<Error, BulkWriteResult>
+  reorder(orderParam: OrderInfos): TE.TaskEither<Error, Number>
   getMaxOrder(): TE.TaskEither<Error, number>
   findById(id: string): TE.TaskEither<Error, Task>
 }
@@ -97,7 +97,7 @@ export class TaskRepoImpl implements TaskRepo {
     )
   }
 
-  reorder(orderParams: OrderInfos): TE.TaskEither<Error, BulkWriteResult> {
+  reorder(orderParams: OrderInfos): TE.TaskEither<Error, Number> {
     const genWriteOperations = (orderParams: OrderInfos) => {
       return orderParams.map(p => {
         return {
@@ -118,7 +118,10 @@ export class TaskRepoImpl implements TaskRepo {
     return pipe(
       orderParams,
       genWriteOperations,
-      executeBulkWrite
+      executeBulkWrite,
+      TE.chain(r => r.nModified == orderParams.length ?
+        TE.right(r.nModified) :
+        TE.left(new Error(`Just matched ${r.nMatched} data.`)))
     )
   }
 

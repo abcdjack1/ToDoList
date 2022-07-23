@@ -108,14 +108,8 @@ const putReorderTasks = (server: FastifyInstance) => {
     return await pipe(
       toDoTaskService.reorder(request.body),
       TE.match(
-        error => { throw error },
-        bulkWriteResult => {
-          if (bulkWriteResult.nMatched == request.body.length) {
-            return response.status(204).send()
-          } else {
-            return response.status(400).send({ message: `Just matched ${bulkWriteResult.nMatched} data.` })
-          }
-        }
+        e => response.status(400).send({ message: e.message }),
+        modified => response.status(200).send({ modified })
       )
     )()
   })

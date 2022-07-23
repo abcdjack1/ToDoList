@@ -13,7 +13,7 @@ export interface TaskService {
   deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
-  reorder(orderParam: OrderInfos): TE.TaskEither<Error, BulkWriteResult>
+  reorder(orderParam: OrderInfos): TE.TaskEither<Error, Number>
   findById(id: string): TE.TaskEither<Error, Task>
 }
 
@@ -82,7 +82,7 @@ export class TaskServiceImpl implements TaskService {
     return this.taskRepo.getCompletedTasks()
   }
 
-  reorder(orderParams: OrderInfos): TE.TaskEither<Error, BulkWriteResult> {
+  reorder(orderParams: OrderInfos): TE.TaskEither<Error, Number> {
     return this.taskRepo.reorder(orderParams)
   }
 
