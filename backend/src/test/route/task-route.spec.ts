@@ -1,11 +1,9 @@
 import { FastifyInstance } from 'fastify'
-import { env } from '../../main/config/env-provider'
-import { Task } from '../../main/model/task-model'
+import { Task, OrderInfos } from '../../main/type/task-type'
 import { startServer } from '../../main/server'
 import { clearTestDB, closeTestDB, connectTestDB } from '../config/test-db-handler'
 import { Response as LightMyRequestResponse } from 'light-my-request'
 import { TaskServiceImpl } from '../../main/service/task-service'
-import { OrderParams } from '../../main/type/params'
 import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 
@@ -207,14 +205,14 @@ describe('Testing To-Do List API', () => {
     const messages = ['test1', 'test2', 'test3']
     const tasks = await createListTask(messages)
 
-    const orderParams: OrderParams[] = []
-    tasks.forEach(t => orderParams.push({ id: t.id, order: t.order }))
+    const orderInfos: OrderInfos = []
+    tasks.forEach(t => orderInfos.push({ id: t.id, order: t.order }))
 
-    orderParams[0].order = 10
-    orderParams[1].order = 100
-    orderParams[2].order = 1000
+    orderInfos[0].order = 10
+    orderInfos[1].order = 100
+    orderInfos[2].order = 1000
 
-    const response = await callAPI(`${urlPath}/orders`, 'PUT', orderParams)
+    const response = await callAPI(`${urlPath}/orders`, 'PUT', orderInfos)
 
     expect(response.statusCode).toBe(204)
 
@@ -226,10 +224,10 @@ describe('Testing To-Do List API', () => {
       )
     )()
 
-    orderParams.forEach(p =>
+    orderInfos.forEach(i =>
       expect(
-        unCompletedTasks.find(t => t.id == p.id)?.order
-      ).toBe(p.order)
+        unCompletedTasks.find(t => t.id == i.id)?.order
+      ).toBe(i.order)
     )
   })
 
@@ -237,12 +235,12 @@ describe('Testing To-Do List API', () => {
     const messages = ['test1', 'test2']
     const tasks = await createListTask(messages)
 
-    const orderParams: OrderParams[] = []
-    tasks.forEach(t => orderParams.push({ id: t.id, order: t.order }))
+    const orderInfos: OrderInfos = []
+    tasks.forEach(t => orderInfos.push({ id: t.id, order: t.order }))
 
-    orderParams[0].id = '62d44b90b928882b63cadbe2'
+    orderInfos[0].id = '62d44b90b928882b63cadbe2'
 
-    const response = await callAPI(`${urlPath}/orders`, 'PUT', orderParams)
+    const response = await callAPI(`${urlPath}/orders`, 'PUT', orderInfos)
 
     expect(response.statusCode).toBe(400)
 

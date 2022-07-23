@@ -1,5 +1,5 @@
 import { Schema, model, Document } from "mongoose";
-import { TaskParams } from "../type/params";
+import { Task } from "../type/task-type";
 
 const taskSchema: Schema = new Schema({
   message: {
@@ -22,9 +22,5 @@ taskSchema.set('toJSON', {
   virtuals: true,
   versionKey: false
 })
-
-
-export interface Task extends TaskParams, Document {
-}
 
 export default model<Task>('TaskModel', taskSchema)

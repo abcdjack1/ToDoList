@@ -12,7 +12,7 @@ const server: FastifyInstance = fastify({
     transport: {
       target: 'pino-pretty'
     },
-    level: 'error'
+    level: env.LOG_LEVEL
   }
 })
 

@@ -1,6 +1,6 @@
-import { Task } from '../model/task-model'
+import { Task } from '../type/task-type'
 import { BulkWriteResult } from 'mongodb'
-import { OrderParams, TaskParams } from '../type/params'
+import { OrderInfos, TaskParams } from '../type/task-type'
 import { TaskRepo, TaskRepoImpl } from '../repo/task-repo'
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/Option'
@@ -13,7 +13,7 @@ export interface TaskService {
   deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
-  reorder(orderParam: OrderParams[]): TE.TaskEither<Error, BulkWriteResult>
+  reorder(orderParam: OrderInfos): TE.TaskEither<Error, BulkWriteResult>
   findById(id: string): TE.TaskEither<Error, Task>
 }
 
@@ -82,7 +82,7 @@ export class TaskServiceImpl implements TaskService {
     return this.taskRepo.getCompletedTasks()
   }
 
-  reorder(orderParams: OrderParams[]): TE.TaskEither<Error, BulkWriteResult> {
+  reorder(orderParams: OrderInfos): TE.TaskEither<Error, BulkWriteResult> {
     return this.taskRepo.reorder(orderParams)
   }
 

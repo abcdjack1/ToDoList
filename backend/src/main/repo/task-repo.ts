@@ -1,6 +1,6 @@
 import { BulkWriteResult } from 'mongodb'
-import TaskModel, { Task } from '../model/task-model'
-import { OrderParams, TaskParams } from '../type/params'
+import TaskModel from '../model/task-model'
+import { OrderInfos, TaskParams, Task } from '../type/task-type'
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/lib/function'
@@ -12,7 +12,7 @@ export interface TaskRepo {
   deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
-  reorder(orderParam: OrderParams[]): TE.TaskEither<Error, BulkWriteResult>
+  reorder(orderParam: OrderInfos): TE.TaskEither<Error, BulkWriteResult>
   getMaxOrder(): TE.TaskEither<Error, number>
   findById(id: string): TE.TaskEither<Error, Task>
 }
@@ -97,8 +97,8 @@ export class TaskRepoImpl implements TaskRepo {
     )
   }
 
-  reorder(orderParams: OrderParams[]): TE.TaskEither<Error, BulkWriteResult> {
-    const genWriteOperations = (orderParams: OrderParams[]) => {
+  reorder(orderParams: OrderInfos): TE.TaskEither<Error, BulkWriteResult> {
+    const genWriteOperations = (orderParams: OrderInfos) => {
       return orderParams.map(p => {
         return {
           'updateOne': {
