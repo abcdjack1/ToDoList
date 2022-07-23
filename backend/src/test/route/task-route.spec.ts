@@ -5,10 +5,7 @@ import { clearTestDB, closeTestDB, connectTestDB } from '../config/test-db-handl
 import { Response as LightMyRequestResponse } from 'light-my-request'
 import { TaskServiceImpl } from '../../main/service/task-service'
 import * as TE from 'fp-ts/TaskEither'
-import { task as T, array as A } from "fp-ts";
 import { pipe } from 'fp-ts/lib/function'
-import { map } from 'fp-ts/lib/Functor'
-import { access, constants } from "fs";
 
 describe('Testing To-Do List API', () => {
   let server: FastifyInstance
