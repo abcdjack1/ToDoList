@@ -27,6 +27,40 @@ describe('Testing To-Do List API', () => {
     await server.close()
   })
 
+  const saveTask = (message: string) => {
+    return pipe(
+      taskService.save(message),
+      TE.match(
+        error => { throw error },
+        task => task
+      )
+    )()
+  }
+
+  const createListTask = (messages: string[]) => {
+    const saveTask = (message: string) => taskService.save(message)
+    return pipe(
+      messages,
+      TE.traverseArray(saveTask),
+      TE.match(
+        (e) => { throw e },
+        (t) => t
+      )
+    )()
+  }
+
+  const getObjectFromBody = (response: LightMyRequestResponse, objectName: string): any => {
+    return JSON.parse(response.body)[objectName]
+  }
+
+  const callAPI = async (url: any, method: any, payload?: any) => {
+    return await server.inject({
+      url: url,
+      method: method,
+      payload: payload
+    })
+  }
+
   it(`should get new task when 'POST /tasks'`, async () => {
     const message = 'test'
     const response = await callAPI(`${urlPath}`, 'POST', { message: message })
@@ -245,39 +279,5 @@ describe('Testing To-Do List API', () => {
 
     expect(result).toBe('Just matched 1 data.')
   })
-
-  const callAPI = async (url: any, method: any, payload?: any) => {
-    return await server.inject({
-      url: url,
-      method: method,
-      payload: payload
-    })
-  }
-
-  const saveTask = (message: string) => {
-    return pipe(
-      taskService.save(message),
-      TE.match(
-        error => { throw error },
-        task => task
-      )
-    )()
-  }
-
-  const createListTask = (messages: string[]) => {
-    const saveTask = (message: string) => taskService.save(message)
-    return pipe(
-      messages,
-      TE.traverseArray(saveTask),
-      TE.match(
-        (e) => { throw e },
-        (t) => t
-      )
-    )()
-  }
-
-  const getObjectFromBody = (response: LightMyRequestResponse, objectName: string): any => {
-    return JSON.parse(response.body)[objectName]
-  }
 
 })
