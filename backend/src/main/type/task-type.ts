@@ -1,7 +1,7 @@
 import { Static } from '@sinclair/typebox'
 import * as TaskSchema from '../route/task-schema'
 
-export type Message = Static<typeof TaskSchema.messageSchema>
+export type NewTask = Static<typeof TaskSchema.messageSchema>
 
 export type Id = Static<typeof TaskSchema.idSchema>
 

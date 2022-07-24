@@ -13,6 +13,9 @@ import { OrderListModule } from 'primeng/orderlist'
 import { DialogModule } from 'primeng/dialog'
 import { InputTextModule } from 'primeng/inputtext'
 import { FormsModule } from '@angular/forms'
+import { ServiceWorkerModule } from '@angular/service-worker'
+import { environment } from '../environments/environment'
+import { CalendarModule } from 'primeng/calendar'
 
 
 @NgModule({
@@ -30,7 +33,12 @@ import { FormsModule } from '@angular/forms'
     DialogModule,
     BrowserAnimationsModule,
     InputTextModule,
-    FormsModule
+    FormsModule,
+    CalendarModule,
+    ServiceWorkerModule.register('ngsw-worker.js', {
+      enabled: environment.production,
+      registrationStrategy: 'registerWhenStable:30000'
+    })
   ],
   providers: [],
   bootstrap: [AppComponent]

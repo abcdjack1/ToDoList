@@ -13,6 +13,10 @@ const taskSchema: Schema = new Schema({
   order: {
     type: Number,
     required: true
+  },
+  reminderTime: {
+    type: String,
+    required: false
   }
 }, {
   timestamps: true

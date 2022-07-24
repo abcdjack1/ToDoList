@@ -1,7 +1,8 @@
 import { Type } from '@sinclair/typebox'
 
 export const messageSchema = Type.Object({
-  message: Type.String()
+  message: Type.String(),
+  reminderTime: Type.Optional(Type.String({ format: 'date-time' }))
 })
 
 export const idSchema = Type.Object({
@@ -12,7 +13,8 @@ export const task = Type.Object({
   id: Type.String(),
   message: Type.String(),
   completed: Type.String(),
-  order: Type.Number()
+  order: Type.Number(),
+  reminderTime: Type.Optional(Type.String({ format: 'date-time' }))
 })
 
 const TaskSchema = Type.Object({
@@ -28,7 +30,8 @@ const TasksSchema = Type.Object({
 export const updateTaskRequestBodySchema = Type.Object({
   message: Type.String(),
   completed: Type.String(),
-  order: Type.Number()
+  order: Type.Number(),
+  reminderTime: Type.Optional(Type.String({ format: 'date-time' }))
 })
 
 export const reorderTasksBodyScehma = Type.Array(

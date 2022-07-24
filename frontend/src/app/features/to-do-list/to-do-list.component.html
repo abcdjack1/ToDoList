@@ -25,6 +25,9 @@
             class="p-button-rounded p-button-danger p-button-sm delete-button" (click)="delete(task.id)"
             style="margin: 5px;"></button>
         </div>
+        <div>
+          <h3 style="float:right">{{task.reminderTime | date : 'yyyy-MM-dd HH:mm'}}</h3>
+        </div>
       </ng-template>
     </p-orderList>
   </p-tabPanel>
@@ -37,7 +40,7 @@
       <ng-template let-task pTemplate="item">
         <div>
           <div class="product-list-detail">
-            <h3 style="float:left">{{task.message}}</h3>
+            <h5 style="float:left">{{task.message}}</h5>
           </div>
         </div>
       </ng-template>
@@ -46,8 +49,16 @@
 </p-tabView>
 
 <p-dialog header="Add" [(visible)]="displayAddDialog" [modal]="true" [style]="{width: '50vw'}" [draggable]="false"
-  [resizable]="false">
-  <input id="addInput" type="text" style="width: 100%;" pInputText [(ngModel)]="inputMessage">
+  [resizable]="false" [contentStyle]="{'overflow': 'visible'}">
+  <div style="width: 20%;">
+    <h4 style="float:left;margin: 10px;">message</h4>
+  </div>
+  <input id="addInput" type="text" style="width: 90%;" pInputText [(ngModel)]="inputMessage">
+  <div style="width: 20%;margin: 10px;">
+    <h4 style="float:left">reminder&nbsp;</h4>
+  </div>
+  <p-calendar [(ngModel)]="inputReminderTime" [showTime]="true" inputId="time" [showButtonBar]="true">
+  </p-calendar>
   <ng-template pTemplate="footer">
     <button id="saveButton" pButton pRipple type="button" label="Save" icon="pi pi-save"
       [disabled]="inputMessage.trim() === ''" class="p-button-rounded p-button-info p-button-sm"
@@ -55,8 +66,16 @@
   </ng-template>
 </p-dialog>
 <p-dialog header="Edit" p-dialog-titlebar-icon [(visible)]="displayEditDialog" [modal]="true" [style]="{width: '50vw'}"
-  [draggable]="false" [resizable]="false">
-  <input id="editInput" type="text" style="width: 100%;" pInputText [(ngModel)]="inputMessage">
+  [draggable]="false" [resizable]="false" [contentStyle]="{'overflow': 'visible'}">
+  <div style="width: 20%;">
+    <h4 style="float:left;margin: 10px;">message</h4>
+  </div>
+  <input id="addInput" type="text" style="width: 90%;" pInputText [(ngModel)]="inputMessage">
+  <div style="width: 20%;margin: 10px;">
+    <h4 style="float:left">reminder&nbsp;</h4>
+  </div>
+  <p-calendar [(ngModel)]="inputReminderTime" [showTime]="true" inputId="time" [showButtonBar]="true">
+  </p-calendar>
   <ng-template pTemplate="footer">
     <button id="editSaveButton" pButton pRipple type="button" label="Save" icon="pi pi-save"
       [disabled]="inputMessage.trim() === ''" class="p-button-rounded p-button-info p-button-sm"

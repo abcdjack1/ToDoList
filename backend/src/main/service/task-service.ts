@@ -3,10 +3,10 @@ import { OrderInfos, TaskParams } from '../type/task-type'
 import { TaskRepo, TaskRepoImpl } from '../repo/task-repo'
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/Option'
-import { pipe, flow } from 'fp-ts/lib/function'
+import { pipe } from 'fp-ts/lib/function'
 
 export interface TaskService {
-  save(message: string): TE.TaskEither<Error, Task>
+  save(message: string, reminderTime?: string): TE.TaskEither<Error, Task>
   update(id: string, task: TaskParams): TE.TaskEither<Error, Task>
   completedById(id: string): TE.TaskEither<Error, Task>
   deleteById(id: string): TE.TaskEither<Error, Task>
@@ -42,7 +42,7 @@ export class TaskServiceImpl implements TaskService {
   }
 
 
-  save(message: string): TE.TaskEither<Error, Task> {
+  save(message: string, reminderTime?: string): TE.TaskEither<Error, Task> {
     this.taskRepo = TaskRepoImpl.getInstance()
     const getMaxOrder = this.taskRepo.getMaxOrder()
     const maxOrderPlusOne = (maxOrder: number) => maxOrder + 1
@@ -50,7 +50,8 @@ export class TaskServiceImpl implements TaskService {
       return {
         message: message,
         completed: 'N',
-        order: order
+        order: order,
+        reminderTime: reminderTime
       }
     }
     const saveTask = (task: TaskParams) => this.taskRepo.save(task)
@@ -64,7 +65,23 @@ export class TaskServiceImpl implements TaskService {
   }
 
   update(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
-    return this.taskRepo.updateById(id, taskParam)
+    const updateData = this.genUpdateData(taskParam)
+    return this.taskRepo.updateById(id, updateData)
+  }
+
+  genUpdateData(taskParam: TaskParams) {
+    let upadteData: any
+    if (!taskParam.reminderTime) {
+      upadteData = {
+        message: taskParam.message,
+        completed: taskParam.completed,
+        order: taskParam.order,
+        $unset: { reminderTime: "" }
+      }
+    } else {
+      upadteData = taskParam
+    }
+    return upadteData
   }
 
   completedById(id: string): TE.TaskEither<Error, Task> {

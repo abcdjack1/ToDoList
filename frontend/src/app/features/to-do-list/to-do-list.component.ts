@@ -1,6 +1,9 @@
+import { DatePipe } from '@angular/common'
 import { Component, OnInit } from '@angular/core'
+import { Subscription, timer } from 'rxjs'
 import { ToDoService } from 'src/app/service/task.service'
 import { Task } from 'src/app/types/tasks'
+import { SwPush } from '@angular/service-worker'
 
 @Component({
   selector: 'app-to-do-list',
@@ -11,15 +14,30 @@ export class ToDoListComponent implements OnInit {
 
   toDoTasks!: Task[]
   completedTasks!: Task[]
-  inputMessage: string = '';
+  inputMessage: string = ''
+  inputReminderTime: Date | null = null
   displayAddDialog: boolean = false
   displayEditDialog: boolean = false
   selectTask: Task = { id: '', message: '', completed: '', order: 0 }
+  sw: ServiceWorkerRegistration | undefined = undefined
+  datePipe: DatePipe = new DatePipe('en-US')
+  timerMap = Object.create({})
 
-  constructor(private toDoService: ToDoService) { }
+  constructor(private toDoService: ToDoService, private swPush: SwPush) { }
 
   ngOnInit(): void {
+    this.askNotificationPermission()
     this.getToDoTasks()
+    this.registNotificationClicks()
+  }
+
+  private async askNotificationPermission() {
+    if ('Notification' in window) {
+      const permission = await Notification.requestPermission()
+      if (permission === 'granted') {
+        this.sw = await navigator.serviceWorker.getRegistration()
+      }
+    }
   }
 
   private async getToDoTasks() {
@@ -40,36 +58,43 @@ export class ToDoListComponent implements OnInit {
 
   addDialoag() {
     this.inputMessage = ""
+    this.inputReminderTime = null
     this.displayAddDialog = true
   }
 
   async add() {
-    const task = await this.toDoService.save(this.inputMessage)
+    const task = await this.toDoService.save(this.inputMessage, this.dateToString(this.inputReminderTime))
     this.toDoTasks.push(task)
     this.toDoTasks = this.toDoTasks.filter(t => true)
     this.displayAddDialog = false
+    this.addNotification(task)
   }
 
   editDialog(task: Task) {
     this.inputMessage = task.message
+    this.inputReminderTime = this.stringToDate(task.reminderTime)
     this.selectTask = task
     this.displayEditDialog = true
   }
 
   async edit() {
     this.selectTask.message = this.inputMessage
-    await this.toDoService.update(this.selectTask)
+    this.selectTask.reminderTime = this.dateToString(this.inputReminderTime)
+    const task = await this.toDoService.update(this.selectTask)
     this.displayEditDialog = false
+    this.rebuildNotification(task)
   }
 
   async done(id: string) {
     await this.toDoService.completed(id)
     this.toDoTasks = this.toDoTasks.filter(t => t.id !== id)
+    this.removeNotification(id)
   }
 
   async delete(id: string) {
     await this.toDoService.delete(id)
     this.getToDoTasks()
+    this.removeNotification(id)
   }
 
   async onReorder() {
@@ -87,6 +112,83 @@ export class ToDoListComponent implements OnInit {
       orderInfos.push(orderInfo)
     })
     await this.toDoService.reorder(orderInfos)
+  }
+
+  async addNotification(task: Task) {
+    const date = this.stringToDate(task.reminderTime)
+    if (date && date > new Date()) {
+      this.timerMap[task.id] = timer(date).subscribe(() => {
+        this.sw?.showNotification('Task reminder', this.buildNotificationOption(task))
+      })
+    }
+  }
+
+  async removeNotification(id: string) {
+    if (this.timerMap[id]) {
+      const notification = this.timerMap[id] as Subscription
+      notification.unsubscribe()
+      this.timerMap[id] = undefined
+    }
+  }
+
+  async rebuildNotification(task: Task) {
+    await this.removeNotification(task.id)
+    await this.addNotification(task)
+  }
+
+  buildNotificationOption(task: Task) {
+    return {
+      body: task.message,
+      data: {
+        id: task.id
+      },
+      requireInteraction: true,
+      actions: [
+        {
+          action: 'done',
+          title: 'Done'
+        },
+        {
+          action: 'wait',
+          title: 'Reminder in an hour'
+        }
+      ]
+    }
+  }
+
+  registNotificationClicks() {
+    this.swPush.notificationClicks.subscribe(({ action, notification }) => {
+      const id: string = notification.data.id
+      if (action === 'done') {
+        this.done(id)
+      } else {
+        const task = this.toDoTasks.find(t => t.id === id)
+        if (task) {
+          task.reminderTime = this.addOneOur(task.reminderTime)
+        }
+      }
+    })
+  }
+
+  addOneOur(dateAsString: string | undefined) {
+    const date = this.stringToDate(dateAsString)
+    date?.setTime(date.getTime() + (60 * 60 * 1000))
+    return this.dateToString(date)
+  }
+
+  dateToString(date: Date | null) {
+    const result = this.datePipe.transform(date, 'yyyy-MM-dd HH:mm')
+    if (result) {
+      return result + ':00'
+    }
+    return undefined
+  }
+
+  stringToDate(dateAsString: string | undefined) {
+    if (dateAsString) {
+      return new Date(dateAsString)
+    }
+    return null
   }
 
 }

@@ -6,11 +6,12 @@ import { OrderListModule } from 'primeng/orderlist'
 import { DialogModule } from 'primeng/dialog'
 import { FormsModule } from '@angular/forms'
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
+import { CalendarModule } from 'primeng/calendar'
+import { ServiceWorkerModule } from '@angular/service-worker'
 
 import { ToDoListComponent } from './to-do-list.component'
 import { Task } from 'src/app/types/tasks'
 import { ToDoService } from 'src/app/service/task.service'
-
 
 describe('ToDoListComponent', () => {
   let component: ToDoListComponent
@@ -30,7 +31,11 @@ describe('ToDoListComponent', () => {
         OrderListModule,
         DialogModule,
         FormsModule,
-        BrowserAnimationsModule
+        BrowserAnimationsModule,
+        CalendarModule,
+        ServiceWorkerModule.register('ngsw-worker.js', {
+          enabled: false
+        })
       ],
       providers: [
         { provide: ToDoService, useValue: toDoSpy }
@@ -44,7 +49,7 @@ describe('ToDoListComponent', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
     testTask1 = { id: '1', message: 'msg1', completed: 'N', order: 1 }
-    testTask2 = { id: '2', message: 'msg2', completed: 'N', order: 0 }
+    testTask2 = { id: '2', message: 'msg2', completed: 'N', order: 0, reminderTime: '2022-01-01 01:00:00' }
   });
 
   it('should create', () => {
@@ -56,6 +61,7 @@ describe('ToDoListComponent', () => {
       component.inputMessage = 'for test'
       component.displayAddDialog = false
       component.addDialoag()
+
       expect(component.inputMessage).toBe('')
       expect(component.displayAddDialog).toBeTrue()
     })
@@ -65,6 +71,7 @@ describe('ToDoListComponent', () => {
       component.toDoTasks = [testTask1]
       component.displayAddDialog = true
       await component.add()
+
       expect(component.toDoTasks.length).toBe(2)
       expect(component.displayAddDialog).toBeFalse()
     })
@@ -73,6 +80,7 @@ describe('ToDoListComponent', () => {
       const task: Task = testTask1
       component.displayEditDialog = false
       component.editDialog(task)
+
       expect(component.selectTask).toBe(task)
       expect(component.displayEditDialog).toBeTrue()
     })
@@ -82,6 +90,7 @@ describe('ToDoListComponent', () => {
       component.selectTask = testTask1
       component.inputMessage = 'test message 2'
       await component.edit()
+
       expect(component.selectTask.message).toBe(component.inputMessage)
       expect(component.displayEditDialog).toBeFalse()
     })
@@ -89,6 +98,7 @@ describe('ToDoListComponent', () => {
     it(`should toDotasks reduce task when that task done`, async () => {
       component.toDoTasks = [testTask1, testTask2]
       await component.done(testTask1.id)
+
       expect(component.toDoTasks.filter(t => t.id == testTask1.id)).toEqual([])
     })
 
@@ -96,6 +106,7 @@ describe('ToDoListComponent', () => {
       toDoServiceSpy.getToDoTasks.and.returnValue(Promise.resolve([testTask2]))
       component.toDoTasks = [testTask1, testTask2]
       await component.delete(testTask1.id)
+
       expect(component.toDoTasks.filter(t => t.id == testTask1.id)).toEqual([])
     })
 
@@ -103,6 +114,7 @@ describe('ToDoListComponent', () => {
       const tasks: Task[] = [testTask1, testTask2]
       component.toDoTasks = tasks
       await component.onReorder()
+
       expect(component.toDoTasks[0].order).toBe(0)
       expect(component.toDoTasks[1].order).toBe(1)
     })
@@ -112,6 +124,7 @@ describe('ToDoListComponent', () => {
       component.toDoTasks = []
       toDoServiceSpy.getToDoTasks.and.returnValue(Promise.resolve(tasks))
       await component.onSelectTabChange({ index: 0 })
+
       expect(component.toDoTasks).toBe(tasks)
     })
 
@@ -120,7 +133,84 @@ describe('ToDoListComponent', () => {
       component.completedTasks = []
       toDoServiceSpy.getCompletedTasks.and.returnValue(Promise.resolve(tasks))
       await component.onSelectTabChange({ index: 1 })
+
       expect(component.completedTasks).toBe(tasks)
+    })
+
+    it(`should get string result when dateToString being called`, () => {
+      const date = new Date('2022-01-01 01:01:01')
+      const result = component.dateToString(date)
+
+      expect(result).toBe('2022-01-01 01:01:00')
+    })
+
+    it(`should get Undefined when dateToString input is null`, () => {
+      const result = component.dateToString(null)
+
+      expect(result).toBeUndefined()
+    })
+
+    it(`should get date result when stringToDate being called`, () => {
+      const dateAsString = '2022-01-01 01:01:01'
+      const date = new Date(dateAsString)
+      const result = component.stringToDate(dateAsString)
+
+      expect(result).toEqual(date)
+    })
+
+    it(`should get null when dateToString input is undefined`, () => {
+      const result = component.dateToString(null)
+
+      expect(result).toBeNull
+    })
+
+    it(`should get one hour ago when addOneOur being called`, () => {
+      const result = component.addOneOur('2022-01-01 01:00:00')
+
+      expect(result).toBe('2022-01-01 02:00:00')
+    })
+
+    it(`should timerMap add notification timer when addNotification being called`, () => {
+      component.addNotification(testTask2)
+
+      expect(component.timerMap[testTask2.id]).toBeDefined()
+    })
+
+    it(`should timerMap remove notification timer when removeNotification being called`, () => {
+      component.addNotification(testTask2)
+      component.removeNotification(testTask2.id)
+
+      expect(component.timerMap[testTask2.id]).toBeUndefined()
+    })
+
+    it(`should timerMap keep have timer notification timer when rebuildNotification being called`, async () => {
+      component.addNotification(testTask2)
+      await component.rebuildNotification(testTask2)
+
+      expect(component.timerMap[testTask2.id]).toBeDefined()
+    })
+
+    it(`should get notification option when buildNotificationOption being called`, () => {
+      const result = component.buildNotificationOption(testTask2)
+      const expectResult = {
+        body: testTask2.message,
+        data: {
+          id: testTask2.id
+        },
+        requireInteraction: true,
+        actions: [
+          {
+            action: 'done',
+            title: 'Done'
+          },
+          {
+            action: 'wait',
+            title: 'Reminder in an hour'
+          }
+        ]
+      }
+
+      expect(result).toEqual(expectResult)
     })
 
   })
@@ -149,7 +239,8 @@ describe('ToDoListComponent', () => {
 
       it(`should save button enabled when input is not blank`, () => {
         component.inputMessage = "test task"
-        fixture.detectChanges();
+        fixture.detectChanges()
+
         expect(saveButton.getAttribute('disabled')).toBeNull()
       })
     })
@@ -173,6 +264,7 @@ describe('ToDoListComponent', () => {
       it(`should save button disabled when input is blank`, () => {
         component.inputMessage = '  '
         fixture.detectChanges();
+
         expect(editSaveButton.getAttribute('disabled')).toBe('')
       })
     })
@@ -188,6 +280,7 @@ describe('ToDoListComponent', () => {
         const doneButton: HTMLElement = compiledComponent.querySelector('.done-button')!
         spyOn(component, 'done')
         doneButton.click()
+
         expect(component.done).toHaveBeenCalled()
       })
 
@@ -195,13 +288,12 @@ describe('ToDoListComponent', () => {
         const deleteButton: HTMLElement = compiledComponent.querySelector('.delete-button')!
         spyOn(component, 'delete')
         deleteButton.click()
+
         expect(component.delete).toHaveBeenCalled()
       })
 
     })
   })
-
-
 
 })
 

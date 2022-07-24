@@ -6,7 +6,7 @@ import { pipe } from 'fp-ts/lib/function'
 
 export interface TaskRepo {
   save(task: TaskParams): TE.TaskEither<Error, Task>
-  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task>
+  updateById(id: string, taskParam: any): TE.TaskEither<Error, Task>
   completedById(id: string): TE.TaskEither<Error, Task>
   deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
@@ -46,12 +46,11 @@ export class TaskRepoImpl implements TaskRepo {
     )
   }
 
-  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
+  updateById(id: string, upadteData: any): TE.TaskEither<Error, Task> {
     const findByIdAndUpdate = () => TE.tryCatch(
-      () => TaskModel.findByIdAndUpdate(id, taskParam, { new: true }).exec(),
+      () => TaskModel.findByIdAndUpdate(id, upadteData, { new: true }).exec(),
       (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
     )
-
     return pipe(
       findByIdAndUpdate(),
       TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
@@ -126,13 +125,13 @@ export class TaskRepoImpl implements TaskRepo {
 
   getMaxOrder(): TE.TaskEither<Error, number> {
     const findOne = () => TE.tryCatch(
-      () => TaskModel.findOne().sort({ 'order': -1 }).exec(),
+      () => TaskModel.find({ completed: 'N' }).findOne().sort({ 'order': -1 }).exec(),
       this.throwNewError
     )
 
     return pipe(
       findOne(),
-      TE.map(t => t == null ? 0 : 1)
+      TE.map(t => t == null ? 0 : t.order)
     )
   }
 

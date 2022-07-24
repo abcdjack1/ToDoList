@@ -23,8 +23,8 @@ export class ToDoService {
     return result.tasks
   }
 
-  async save(message: string): Promise<Task> {
-    const result = await lastValueFrom(this.http.post<{ task: Task }>(`${this.tasksApiUtl}`, { message: message }))
+  async save(message: string, reminderTime?: string): Promise<Task> {
+    const result = await lastValueFrom(this.http.post<{ task: Task }>(`${this.tasksApiUtl}`, { message: message, reminderTime: reminderTime }))
     return result.task
   }
 

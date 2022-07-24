@@ -3,7 +3,7 @@ import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { TaskService, TaskServiceImpl } from '../service/task-service'
 import * as TaskSchema from './task-schema'
-import { Message, Id, TaskParams, OrderInfos } from '../type/task-type'
+import { NewTask, Id, TaskParams, OrderInfos } from '../type/task-type'
 
 export const TaskRouter = (
   server: FastifyInstance,
@@ -27,9 +27,9 @@ export const TaskRouter = (
 const toDoTaskService: TaskService = TaskServiceImpl.getInstance()
 
 const postSaveTask = (server: FastifyInstance) => {
-  return server.post<{ Body: Message }>('', TaskSchema.postSaveTaskOption, async (request, response) => {
+  return server.post<{ Body: NewTask }>('', TaskSchema.postSaveTaskOption, async (request, response) => {
     return await pipe(
-      toDoTaskService.save(request.body.message),
+      toDoTaskService.save(request.body.message, request.body.reminderTime),
       TE.match(
         e => response.status(400).send({ message: e.message }),
         task => response.status(201).send({ task })

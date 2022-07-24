@@ -18,6 +18,10 @@ paths:
               properties:
                 message:
                   type: string
+                reminderTime:
+                  type: string
+              required:
+                - message
             example: { "message": "test task message" }
       responses:
         "201":
@@ -288,6 +292,8 @@ components:
           type: string
         order:
           type: number
+        reminderTime:
+          type: string
       required:
         - message
         - completed
