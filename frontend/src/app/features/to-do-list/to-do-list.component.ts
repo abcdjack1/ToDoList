@@ -25,10 +25,11 @@ export class ToDoListComponent implements OnInit {
 
   constructor(private toDoService: ToDoService, private swPush: SwPush) { }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
     this.askNotificationPermission()
-    this.getToDoTasks()
+    await this.getToDoTasks()
     this.registNotificationClicks()
+    this.initNotifications()
   }
 
   private async askNotificationPermission() {
@@ -114,7 +115,11 @@ export class ToDoListComponent implements OnInit {
     await this.toDoService.reorder(orderInfos)
   }
 
-  async addNotification(task: Task) {
+  initNotifications() {
+    this.toDoTasks.forEach(t => this.addNotification(t))
+  }
+
+  addNotification(task: Task) {
     const date = this.stringToDate(task.reminderTime)
     if (date && date > new Date()) {
       this.timerMap[task.id] = timer(date).subscribe(() => {
@@ -123,7 +128,7 @@ export class ToDoListComponent implements OnInit {
     }
   }
 
-  async removeNotification(id: string) {
+  removeNotification(id: string) {
     if (this.timerMap[id]) {
       const notification = this.timerMap[id] as Subscription
       notification.unsubscribe()
@@ -132,8 +137,8 @@ export class ToDoListComponent implements OnInit {
   }
 
   async rebuildNotification(task: Task) {
-    await this.removeNotification(task.id)
-    await this.addNotification(task)
+    this.removeNotification(task.id)
+    this.addNotification(task)
   }
 
   buildNotificationOption(task: Task) {
@@ -164,13 +169,13 @@ export class ToDoListComponent implements OnInit {
       } else {
         const task = this.toDoTasks.find(t => t.id === id)
         if (task) {
-          task.reminderTime = this.addOneOur(task.reminderTime)
+          task.reminderTime = this.addOnehour(task.reminderTime)
         }
       }
     })
   }
 
-  addOneOur(dateAsString: string | undefined) {
+  addOnehour(dateAsString: string | undefined) {
     const date = this.stringToDate(dateAsString)
     date?.setTime(date.getTime() + (60 * 60 * 1000))
     return this.dateToString(date)

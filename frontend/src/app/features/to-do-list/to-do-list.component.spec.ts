@@ -7,11 +7,12 @@ import { DialogModule } from 'primeng/dialog'
 import { FormsModule } from '@angular/forms'
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
 import { CalendarModule } from 'primeng/calendar'
-import { ServiceWorkerModule } from '@angular/service-worker'
+import { SwPush } from '@angular/service-worker'
 
 import { ToDoListComponent } from './to-do-list.component'
 import { Task } from 'src/app/types/tasks'
 import { ToDoService } from 'src/app/service/task.service'
+import { Observable } from 'rxjs'
 
 describe('ToDoListComponent', () => {
   let component: ToDoListComponent
@@ -23,6 +24,7 @@ describe('ToDoListComponent', () => {
   beforeEach(async () => {
     const toDoSpy = jasmine.createSpyObj('ToDoService', ['getToDoTasks',
       'getCompletedTasks', 'reorder', 'save', 'completed', 'update', 'delete'])
+    const swPush = jasmine.createSpyObj('SwPush', {}, { notificationClicks: Observable })
     await TestBed.configureTestingModule({
       declarations: [ToDoListComponent],
       imports: [
@@ -32,13 +34,11 @@ describe('ToDoListComponent', () => {
         DialogModule,
         FormsModule,
         BrowserAnimationsModule,
-        CalendarModule,
-        ServiceWorkerModule.register('ngsw-worker.js', {
-          enabled: false
-        })
+        CalendarModule
       ],
       providers: [
-        { provide: ToDoService, useValue: toDoSpy }
+        { provide: ToDoService, useValue: toDoSpy },
+        { provide: SwPush, useValue: swPush },
       ]
     })
       .compileComponents();
@@ -48,8 +48,8 @@ describe('ToDoListComponent', () => {
     fixture = TestBed.createComponent(ToDoListComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    testTask1 = { id: '1', message: 'msg1', completed: 'N', order: 1 }
-    testTask2 = { id: '2', message: 'msg2', completed: 'N', order: 0, reminderTime: '2022-01-01 01:00:00' }
+    testTask1 = { id: '1', message: 'msg1', completed: 'N', order: 1, reminderTime: '2999-01-01 01:00:00' }
+    testTask2 = { id: '2', message: 'msg2', completed: 'N', order: 0, reminderTime: '2999-01-01 01:00:00' }
   });
 
   it('should create', () => {
@@ -86,6 +86,9 @@ describe('ToDoListComponent', () => {
     })
 
     it(`should hidden edit dialog and selectTask.message equals inputMessage when 'edit()' being called`, async () => {
+      toDoServiceSpy.update.and.returnValue(
+        Promise.resolve({ id: '1', message: 'test message 2', completed: 'N', order: 1, reminderTime: '2999-01-01 01:00:00' })
+      )
       component.displayEditDialog = true
       component.selectTask = testTask1
       component.inputMessage = 'test message 2'
@@ -150,6 +153,7 @@ describe('ToDoListComponent', () => {
       expect(result).toBeUndefined()
     })
 
+
     it(`should get date result when stringToDate being called`, () => {
       const dateAsString = '2022-01-01 01:01:01'
       const date = new Date(dateAsString)
@@ -158,25 +162,33 @@ describe('ToDoListComponent', () => {
       expect(result).toEqual(date)
     })
 
-    it(`should get null when dateToString input is undefined`, () => {
-      const result = component.dateToString(null)
+    it(`should get null when stringToDate input is undefined`, () => {
+      const result = component.stringToDate(undefined)
 
       expect(result).toBeNull
     })
 
     it(`should get one hour ago when addOneOur being called`, () => {
-      const result = component.addOneOur('2022-01-01 01:00:00')
+      const result = component.addOnehour('2022-01-01 01:00:00')
 
       expect(result).toBe('2022-01-01 02:00:00')
     })
 
-    it(`should timerMap add notification timer when addNotification being called`, () => {
+    it(`should timerMap add notification timer when initNotifications being called`, async () => {
+      component.toDoTasks = [testTask1, testTask2]
+      component.initNotifications()
+
+      expect(component.timerMap[testTask1.id]).toBeDefined()
+      expect(component.timerMap[testTask2.id]).toBeDefined()
+    })
+
+    it(`should timerMap add notification timer when addNotification being called`, async () => {
       component.addNotification(testTask2)
 
       expect(component.timerMap[testTask2.id]).toBeDefined()
     })
 
-    it(`should timerMap remove notification timer when removeNotification being called`, () => {
+    it(`should timerMap remove notification timer when removeNotification being called`, async () => {
       component.addNotification(testTask2)
       component.removeNotification(testTask2.id)
 
