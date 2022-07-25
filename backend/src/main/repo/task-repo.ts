@@ -58,18 +58,20 @@ export class TaskRepoImpl implements TaskRepo {
   }
 
   genUpdateData(taskParam: TaskParams) {
-    let upadteData: any
-    if (!taskParam.reminderTime) {
-      upadteData = {
-        message: taskParam.message,
-        completed: taskParam.completed,
-        order: taskParam.order,
-        $unset: { reminderTime: "" }
-      }
+    if (taskParam.reminderTime) {
+      return taskParam
     } else {
-      upadteData = taskParam
+      return this.taskParamWithUnsetReminderTime(taskParam)
     }
-    return upadteData
+  }
+
+  taskParamWithUnsetReminderTime = (taskParam: TaskParams) => {
+    return {
+      message: taskParam.message,
+      completed: taskParam.completed,
+      order: taskParam.order,
+      $unset: { reminderTime: "" }
+    }
   }
 
   completedById(id: string): TE.TaskEither<Error, Task> {
