@@ -6,6 +6,7 @@ import { Response as LightMyRequestResponse } from 'light-my-request'
 import { TaskServiceImpl } from '../../main/service/task-service'
 import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
+import { map } from 'fp-ts/Array'
 
 describe('Testing To-Do List API', () => {
   let server: FastifyInstance
@@ -27,9 +28,9 @@ describe('Testing To-Do List API', () => {
     await server.close()
   })
 
-  const saveTask = (message: string) => {
+  const saveTask = (message: string, reminderTime?: string) => {
     return pipe(
-      taskService.save(message),
+      taskService.save(message, reminderTime),
       TE.match(
         error => { throw error },
         task => task
@@ -96,6 +97,51 @@ describe('Testing To-Do List API', () => {
     expect(befoerUpdatedTask.order).toBe(taskParams.order)
   })
 
+  it(`should update task has reminderTime when 'PUT /tasks/:id'`, async () => {
+    const task = await saveTask('test')
+
+    const taskParams = {
+      message: 'new message',
+      completed: 'Y',
+      order: 666,
+      reminderTime: '2099-01-01 01:00:00'
+    }
+
+    const response = await callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams)
+
+    expect(response.statusCode).toBe(200)
+
+    const befoerUpdatedTask = getObjectFromBody(response, 'task')
+
+    expect(befoerUpdatedTask.id).toBe(task.id)
+    expect(befoerUpdatedTask.message).toBe(taskParams.message)
+    expect(befoerUpdatedTask.completed).toBe(taskParams.completed)
+    expect(befoerUpdatedTask.order).toBe(taskParams.order)
+    expect(befoerUpdatedTask.reminderTime).toBe(taskParams.reminderTime)
+  })
+
+  it(`should update task not has reminderTime when 'PUT /tasks/:id'`, async () => {
+    const task = await saveTask('test', '2099-01-01 01:00:00')
+
+    const taskParams = {
+      message: 'new message',
+      completed: 'Y',
+      order: 666
+    }
+
+    const response = await callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams)
+
+    expect(response.statusCode).toBe(200)
+
+    const befoerUpdatedTask = getObjectFromBody(response, 'task')
+
+    expect(befoerUpdatedTask.id).toBe(task.id)
+    expect(befoerUpdatedTask.message).toBe(taskParams.message)
+    expect(befoerUpdatedTask.completed).toBe(taskParams.completed)
+    expect(befoerUpdatedTask.order).toBe(taskParams.order)
+    expect(befoerUpdatedTask.reminderTime).toBeUndefined()
+  })
+
   it(`shoud get error mssage when 'PUT /tasks/:id' use not existed Id`, async () => {
     const notExistedId = '62d44b90b928882b63cadbe2'
     const taskParams = {
@@ -145,6 +191,17 @@ describe('Testing To-Do List API', () => {
     expect(befoerCompletedTask.order).toBe(task.order)
   })
 
+  it(`should get error when 'PUT /tasks/:id/be-done' use not availed id `, async () => {
+    const id = '123456'
+    const response = await callAPI(`${urlPath}/${id}/be-done`, 'PUT')
+
+    expect(response.statusCode).toBe(400)
+
+    const message = getObjectFromBody(response, 'message')
+
+    expect(message).toBe(`Task ID ${id} is not availed.`)
+  })
+
   it(`shoud get error mssage when 'PUT /tasks/:id/be-done' use not existed Id`, async () => {
     const notExistedId = '62d44b90b928882b63cadbe2'
 
@@ -164,17 +221,15 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(204)
 
-    try {
-      await pipe(
-        taskService.findById(task.id),
-        TE.match(
-          error => { throw error },
-          task => task
-        )
-      )()
-    } catch (e: any) {
-      expect(e.message).toBe(`Task id ${task.id} not found`)
-    }
+    const unCompletedTasks = await pipe(
+      taskService.getUnCompletedTasks(),
+      TE.match(
+        error => { throw error },
+        tasks => tasks
+      )
+    )()
+
+    expect(unCompletedTasks.length).toBe(0)
   })
 
   it(`shoud get error mssage when 'DELETE /tasks/:id' use not existed Id`, async () => {
@@ -187,6 +242,18 @@ describe('Testing To-Do List API', () => {
     const message = getObjectFromBody(response, 'message')
 
     expect(message).toBe(`Task id ${notExistedId} not found`)
+  })
+
+  it(`shoud get error mssage when 'DELETE /tasks/:id' use not availed id`, async () => {
+    const id = '123456'
+
+    const response = await callAPI(`${urlPath}/${id}`, 'DELETE')
+
+    expect(response.statusCode).toBe(400)
+
+    const message = getObjectFromBody(response, 'message')
+
+    expect(message).toBe(`Task ID ${id} is not availed.`)
   })
 
   it(`should get uncompleted tasks when 'GET /tasks/to-do'`, async () => {
@@ -227,11 +294,16 @@ describe('Testing To-Do List API', () => {
 
   it(`should reorder tasks when 'PUT /tasks/orders'`, async () => {
     const messages = ['test1', 'test2', 'test3']
-    const tasks = await createListTask(messages)
+    const tasks: any = await createListTask(messages)
 
     const orderInfos: OrderInfos = []
 
-    tasks.forEach(t => orderInfos.push({ id: t.id, order: t.order }))
+    const pushToOrderInfo = (t: any) => orderInfos.push({ id: t.id, order: t.order })
+
+    pipe(
+      tasks,
+      map(pushToOrderInfo)
+    )
 
     orderInfos[0].order = 10
     orderInfos[1].order = 100
@@ -245,29 +317,36 @@ describe('Testing To-Do List API', () => {
 
     expect(modified).toBe(orderInfos.length)
 
-    const unCompletedTasks = await Promise.all(
-      await pipe(
-        taskService.getUnCompletedTasks(),
-        TE.match(
-          error => { throw error },
-          tasks => tasks
-        )
-      )())
+    const unCompletedTasks = await pipe(
+      taskService.getUnCompletedTasks(),
+      TE.match(
+        error => { throw error },
+        tasks => tasks
+      )
+    )()
 
-    orderInfos.forEach(i =>
-      expect(
-        unCompletedTasks.find(t => t.id == i.id)?.order
-      ).toBe(i.order)
+    const expectOrder = (orderInfo: any) => {
+      expect(unCompletedTasks.find(t => t.id == orderInfo.id)?.order).toBe(orderInfo.order)
+    }
+
+    pipe(
+      orderInfos,
+      map(expectOrder)
     )
   })
 
   it(`should reorder tasks failed when 'PUT /tasks/orders' use not exist id`, async () => {
     const messages = ['test1', 'test2']
-    const tasks = await createListTask(messages)
+    const tasks: any = await createListTask(messages)
 
     const orderInfos: OrderInfos = []
 
-    tasks.forEach(t => orderInfos.push({ id: t.id, order: t.order }))
+    const pushToOrderInfo = (t: any) => orderInfos.push({ id: t.id, order: t.order })
+
+    pipe(
+      tasks,
+      map(pushToOrderInfo)
+    )
 
     orderInfos[0].id = '62d44b90b928882b63cadbe2'
 

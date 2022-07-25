@@ -13,7 +13,6 @@ export interface TaskService {
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
   reorder(orderParam: OrderInfos): TE.TaskEither<Error, Number>
-  findById(id: string): TE.TaskEither<Error, Task>
 }
 
 export class TaskServiceImpl implements TaskService {
@@ -65,23 +64,7 @@ export class TaskServiceImpl implements TaskService {
   }
 
   update(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
-    const updateData = this.genUpdateData(taskParam)
-    return this.taskRepo.updateById(id, updateData)
-  }
-
-  genUpdateData(taskParam: TaskParams) {
-    let upadteData: any
-    if (!taskParam.reminderTime) {
-      upadteData = {
-        message: taskParam.message,
-        completed: taskParam.completed,
-        order: taskParam.order,
-        $unset: { reminderTime: "" }
-      }
-    } else {
-      upadteData = taskParam
-    }
-    return upadteData
+    return this.taskRepo.updateById(id, taskParam)
   }
 
   completedById(id: string): TE.TaskEither<Error, Task> {
@@ -104,7 +87,4 @@ export class TaskServiceImpl implements TaskService {
     return this.taskRepo.reorder(orderParams)
   }
 
-  findById(id: string): TE.TaskEither<Error, Task> {
-    return this.taskRepo.findById(id)
-  }
 }

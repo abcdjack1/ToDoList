@@ -6,14 +6,13 @@ import { pipe } from 'fp-ts/lib/function'
 
 export interface TaskRepo {
   save(task: TaskParams): TE.TaskEither<Error, Task>
-  updateById(id: string, taskParam: any): TE.TaskEither<Error, Task>
+  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task>
   completedById(id: string): TE.TaskEither<Error, Task>
   deleteById(id: string): TE.TaskEither<Error, Task>
   getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
   getCompletedTasks(): TE.TaskEither<Error, Task[]>
   reorder(orderParam: OrderInfos): TE.TaskEither<Error, Number>
   getMaxOrder(): TE.TaskEither<Error, number>
-  findById(id: string): TE.TaskEither<Error, Task>
 }
 
 export class TaskRepoImpl implements TaskRepo {
@@ -46,15 +45,31 @@ export class TaskRepoImpl implements TaskRepo {
     )
   }
 
-  updateById(id: string, upadteData: any): TE.TaskEither<Error, Task> {
+  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
+    const updateData = this.genUpdateData(taskParam)
     const findByIdAndUpdate = () => TE.tryCatch(
-      () => TaskModel.findByIdAndUpdate(id, upadteData, { new: true }).exec(),
+      () => TaskModel.findByIdAndUpdate(id, updateData, { new: true }).exec(),
       (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
     )
     return pipe(
       findByIdAndUpdate(),
       TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
     )
+  }
+
+  genUpdateData(taskParam: TaskParams) {
+    let upadteData: any
+    if (!taskParam.reminderTime) {
+      upadteData = {
+        message: taskParam.message,
+        completed: taskParam.completed,
+        order: taskParam.order,
+        $unset: { reminderTime: "" }
+      }
+    } else {
+      upadteData = taskParam
+    }
+    return upadteData
   }
 
   completedById(id: string): TE.TaskEither<Error, Task> {
@@ -132,20 +147,6 @@ export class TaskRepoImpl implements TaskRepo {
     return pipe(
       findOne(),
       TE.map(t => t == null ? 0 : t.order)
-    )
-  }
-
-  findById(id: string): TE.TaskEither<Error, Task> {
-    const findById = () => TE.tryCatch(
-      () => TaskModel.findById(id).exec(),
-      this.throwNewError
-    )
-
-    return pipe(
-      findById(),
-      TE.chain(
-        (t) => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t)
-      )
     )
   }
 
