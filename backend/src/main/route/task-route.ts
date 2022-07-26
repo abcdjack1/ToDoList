@@ -4,6 +4,8 @@ import { pipe } from 'fp-ts/lib/function'
 import { TaskService, TaskServiceImpl } from '../service/task-service'
 import * as TaskSchema from './task-schema'
 import { NewTask, Id, TaskParams, OrderInfos } from '../type/task-type'
+import { match, P } from 'ts-pattern'
+import { AppError } from '../type/error-type'
 
 export const TaskRouter = (
   server: FastifyInstance,
@@ -31,7 +33,7 @@ const postSaveTask = (server: FastifyInstance) => {
     return await pipe(
       toDoTaskService.save(request.body.message, request.body.reminderTime),
       TE.match(
-        e => response.status(400).send({ message: e.message }),
+        e => errorHandler(e, response),
         task => response.status(201).send({ task })
       )
     )()
@@ -45,7 +47,7 @@ const putUpdateTask = (server: FastifyInstance) => {
       return await pipe(
         toDoTaskService.update(id, request.body),
         TE.match(
-          e => response.status(400).send({ message: e.message }),
+          e => errorHandler(e, response),
           task => response.status(200).send({ task })
         )
       )()
@@ -59,7 +61,7 @@ const putCompletedTask = (server: FastifyInstance) => {
     return await pipe(
       toDoTaskService.completedById(id),
       TE.match(
-        e => { response.status(400).send({ message: e.message }) },
+        e => errorHandler(e, response),
         task => response.status(200).send({ task })
       )
     )()
@@ -72,8 +74,8 @@ const deleteTask = (server: FastifyInstance) => {
     return await pipe(
       toDoTaskService.deleteById(id),
       TE.match(
-        e => response.status(400).send({ message: e.message }),
-        task => response.status(204).send()
+        e => errorHandler(e, response),
+        _ => response.status(204).send()
       )
     )()
   })
@@ -84,7 +86,7 @@ const getToDoTasks = (server: FastifyInstance) => {
     return await pipe(
       toDoTaskService.getUnCompletedTasks(),
       TE.match(
-        e => response.status(400).send({ message: e.message }),
+        e => errorHandler(e, response),
         tasks => response.status(200).send({ tasks })
       )
     )()
@@ -96,7 +98,7 @@ const getCompletedTasks = (server: FastifyInstance) => {
     return await pipe(
       toDoTaskService.getCompletedTasks(),
       TE.match(
-        e => response.status(400).send({ message: e.message }),
+        e => errorHandler(e, response),
         tasks => response.status(200).send({ tasks })
       )
     )()
@@ -108,9 +110,16 @@ const putReorderTasks = (server: FastifyInstance) => {
     return await pipe(
       toDoTaskService.reorder(request.body),
       TE.match(
-        e => response.status(400).send({ message: e.message }),
+        e => errorHandler(e, response),
         modified => response.status(200).send({ modified })
       )
     )()
   })
+}
+
+const errorHandler = (e: AppError, response: any) => {
+  match(e)
+    .with({ _tag: P.select(P.union('DatabaseError', 'DataNotFoundError', 'ValidationError')) },
+      (error) => response.status(400).send({ error: error, message: e.message }))
+    .otherwise(() => response.status(500).send({ message: e.message }))
 }

@@ -154,8 +154,10 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(400)
 
+    const error = getObjectFromBody(response, 'error')
     const message = getObjectFromBody(response, 'message')
 
+    expect(error).toBe('DataNotFoundError')
     expect(message).toBe(`Task id ${notExistedId} not found`)
   })
 
@@ -171,8 +173,10 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(400)
 
+    const error = getObjectFromBody(response, 'error')
     const message = getObjectFromBody(response, 'message')
 
+    expect(error).toBe('ValidationError')
     expect(message).toBe(`Task ID ${notAvailedId} is not availed.`)
   })
 
@@ -197,8 +201,10 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(400)
 
+    const error = getObjectFromBody(response, 'error')
     const message = getObjectFromBody(response, 'message')
 
+    expect(error).toBe('ValidationError')
     expect(message).toBe(`Task ID ${id} is not availed.`)
   })
 
@@ -209,8 +215,10 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(400)
 
+    const error = getObjectFromBody(response, 'error')
     const message = getObjectFromBody(response, 'message')
 
+    expect(error).toBe('DataNotFoundError')
     expect(message).toBe(`Task id ${notExistedId} not found`)
   })
 
@@ -239,8 +247,10 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(400)
 
+    const error = getObjectFromBody(response, 'error')
     const message = getObjectFromBody(response, 'message')
 
+    expect(error).toBe('DataNotFoundError')
     expect(message).toBe(`Task id ${notExistedId} not found`)
   })
 
@@ -251,8 +261,10 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(400)
 
+    const error = getObjectFromBody(response, 'error')
     const message = getObjectFromBody(response, 'message')
 
+    expect(error).toBe('ValidationError')
     expect(message).toBe(`Task ID ${id} is not availed.`)
   })
 
@@ -354,9 +366,11 @@ describe('Testing To-Do List API', () => {
 
     expect(response.statusCode).toBe(400)
 
-    const result = getObjectFromBody(response, 'message')
+    const error = getObjectFromBody(response, 'error')
+    const message = getObjectFromBody(response, 'message')
 
-    expect(result).toBe('Just matched 1 data.')
+    expect(error).toBe('DataNotFoundError')
+    expect(message).toBe('Just matched 1 data.')
   })
 
 })

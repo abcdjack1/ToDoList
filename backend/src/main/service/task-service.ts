@@ -4,15 +4,16 @@ import { TaskRepo, TaskRepoImpl } from '../repo/task-repo'
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/lib/function'
+import { AppError } from '../type/error-type'
 
 export interface TaskService {
-  save(message: string, reminderTime?: string): TE.TaskEither<Error, Task>
-  update(id: string, task: TaskParams): TE.TaskEither<Error, Task>
-  completedById(id: string): TE.TaskEither<Error, Task>
-  deleteById(id: string): TE.TaskEither<Error, Task>
-  getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
-  getCompletedTasks(): TE.TaskEither<Error, Task[]>
-  reorder(orderParam: OrderInfos): TE.TaskEither<Error, Number>
+  save(message: string, reminderTime?: string): TE.TaskEither<AppError, Task>
+  update(id: string, task: TaskParams): TE.TaskEither<AppError, Task>
+  completedById(id: string): TE.TaskEither<AppError, Task>
+  deleteById(id: string): TE.TaskEither<AppError, Task>
+  getUnCompletedTasks(): TE.TaskEither<AppError, Task[]>
+  getCompletedTasks(): TE.TaskEither<AppError, Task[]>
+  reorder(orderParam: OrderInfos): TE.TaskEither<AppError, Number>
 }
 
 export class TaskServiceImpl implements TaskService {
@@ -41,7 +42,7 @@ export class TaskServiceImpl implements TaskService {
   }
 
 
-  save(message: string, reminderTime?: string): TE.TaskEither<Error, Task> {
+  save(message: string, reminderTime?: string): TE.TaskEither<AppError, Task> {
     this.taskRepo = TaskRepoImpl.getInstance()
     const getMaxOrder = this.taskRepo.getMaxOrder()
     const maxOrderPlusOne = (maxOrder: number) => maxOrder + 1
@@ -63,27 +64,27 @@ export class TaskServiceImpl implements TaskService {
     )
   }
 
-  update(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
+  update(id: string, taskParam: TaskParams): TE.TaskEither<AppError, Task> {
     return this.taskRepo.updateById(id, taskParam)
   }
 
-  completedById(id: string): TE.TaskEither<Error, Task> {
+  completedById(id: string): TE.TaskEither<AppError, Task> {
     return this.taskRepo.completedById(id)
   }
 
-  deleteById(id: string): TE.TaskEither<Error, Task> {
+  deleteById(id: string): TE.TaskEither<AppError, Task> {
     return this.taskRepo.deleteById(id)
   }
 
-  getUnCompletedTasks(): TE.TaskEither<Error, Task[]> {
+  getUnCompletedTasks(): TE.TaskEither<AppError, Task[]> {
     return this.taskRepo.getUnCompletedTasks()
   }
 
-  getCompletedTasks(): TE.TaskEither<Error, Task[]> {
+  getCompletedTasks(): TE.TaskEither<AppError, Task[]> {
     return this.taskRepo.getCompletedTasks()
   }
 
-  reorder(orderParams: OrderInfos): TE.TaskEither<Error, Number> {
+  reorder(orderParams: OrderInfos): TE.TaskEither<AppError, Number> {
     return this.taskRepo.reorder(orderParams)
   }
 

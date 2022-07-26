@@ -23,7 +23,8 @@
     "g": "^2.0.1",
     "mongodb": "^4.8.0",
     "mongoose": "^6.4.4",
-    "pino-pretty": "^8.1.0"
+    "pino-pretty": "^8.1.0",
+    "ts-pattern": "^4.0.5"
   },
   "devDependencies": {
     "@types/jest": "^28.1.6",

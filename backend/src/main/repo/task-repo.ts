@@ -3,16 +3,18 @@ import { OrderInfos, TaskParams, Task } from '../type/task-type'
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/lib/function'
+import { AppError, databaseErrorOf, dataNotFoundErrorOf, validationErrorOf } from '../type/error-type'
+import mongoose from 'mongoose'
 
 export interface TaskRepo {
-  save(task: TaskParams): TE.TaskEither<Error, Task>
-  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task>
-  completedById(id: string): TE.TaskEither<Error, Task>
-  deleteById(id: string): TE.TaskEither<Error, Task>
-  getUnCompletedTasks(): TE.TaskEither<Error, Task[]>
-  getCompletedTasks(): TE.TaskEither<Error, Task[]>
-  reorder(orderParam: OrderInfos): TE.TaskEither<Error, Number>
-  getMaxOrder(): TE.TaskEither<Error, number>
+  save(task: TaskParams): TE.TaskEither<AppError, Task>
+  updateById(id: string, taskParam: TaskParams): TE.TaskEither<AppError, Task>
+  completedById(id: string): TE.TaskEither<AppError, Task>
+  deleteById(id: string): TE.TaskEither<AppError, Task>
+  getUnCompletedTasks(): TE.TaskEither<AppError, Task[]>
+  getCompletedTasks(): TE.TaskEither<AppError, Task[]>
+  reorder(orderParam: OrderInfos): TE.TaskEither<AppError, Number>
+  getMaxOrder(): TE.TaskEither<AppError, number>
 }
 
 export class TaskRepoImpl implements TaskRepo {
@@ -38,14 +40,14 @@ export class TaskRepoImpl implements TaskRepo {
     return this.taskRepoImpl
   }
 
-  save(task: TaskParams): TE.TaskEither<Error, Task> {
+  save(task: TaskParams): TE.TaskEither<AppError, Task> {
     return TE.tryCatch(
       () => TaskModel.create(task),
-      this.throwNewError
+      (error) => databaseErrorOf(`${error}`)
     )
   }
 
-  updateById(id: string, taskParam: TaskParams): TE.TaskEither<Error, Task> {
+  updateById(id: string, taskParam: TaskParams): TE.TaskEither<AppError, Task> {
     const updateData = this.genUpdateData(taskParam)
     const findByIdAndUpdate = () => TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, updateData, { new: true }).exec(),
@@ -53,7 +55,7 @@ export class TaskRepoImpl implements TaskRepo {
     )
     return pipe(
       findByIdAndUpdate(),
-      TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
+      TE.chain(t => t == null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
     )
   }
 
@@ -74,7 +76,7 @@ export class TaskRepoImpl implements TaskRepo {
     }
   }
 
-  completedById(id: string): TE.TaskEither<Error, Task> {
+  completedById(id: string): TE.TaskEither<AppError, Task> {
     const findByIdAndUpdate = () => TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, { completed: 'Y' }, { new: true }).exec(),
       (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
@@ -82,11 +84,11 @@ export class TaskRepoImpl implements TaskRepo {
 
     return pipe(
       findByIdAndUpdate(),
-      TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
+      TE.chain(t => t == null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
     )
   }
 
-  deleteById(id: string): TE.TaskEither<Error, Task> {
+  deleteById(id: string): TE.TaskEither<AppError, Task> {
     const findByIdAndRemove = () => TE.tryCatch(
       () => TaskModel.findByIdAndRemove(id).exec(),
       (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
@@ -94,25 +96,25 @@ export class TaskRepoImpl implements TaskRepo {
 
     return pipe(
       findByIdAndRemove(),
-      TE.chain(t => t == null ? TE.left(this.taskIdNotFoundError(id)) : TE.right(t))
+      TE.chain(t => t == null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
     )
   }
 
-  getUnCompletedTasks(): TE.TaskEither<Error, Task[]> {
+  getUnCompletedTasks(): TE.TaskEither<AppError, Task[]> {
     return TE.tryCatch(
       () => TaskModel.find({ completed: 'N' }).sort('order').exec(),
-      this.throwNewError
+      (error) => databaseErrorOf(`${error}`)
     )
   }
 
-  getCompletedTasks(): TE.TaskEither<Error, Task[]> {
+  getCompletedTasks(): TE.TaskEither<AppError, Task[]> {
     return TE.tryCatch(
       () => TaskModel.find({ completed: 'Y' }).sort({ 'updatedAt': -1 }).exec(),
-      this.throwNewError
+      (error) => databaseErrorOf(`${error}`)
     )
   }
 
-  reorder(orderParams: OrderInfos): TE.TaskEither<Error, Number> {
+  reorder(orderParams: OrderInfos): TE.TaskEither<AppError, Number> {
     const genWriteOperations = (orderParams: OrderInfos) => {
       return orderParams.map(p => {
         return {
@@ -126,7 +128,7 @@ export class TaskRepoImpl implements TaskRepo {
     const executeBulkWrite = (writeOperations: any[]) => {
       return TE.tryCatch(
         () => TaskModel.bulkWrite(writeOperations),
-        this.throwNewError
+        (error) => databaseErrorOf(`${error}`) as AppError
       )
     }
 
@@ -136,14 +138,14 @@ export class TaskRepoImpl implements TaskRepo {
       executeBulkWrite,
       TE.chain(r => r.nModified == orderParams.length ?
         TE.right(r.nModified) :
-        TE.left(new Error(`Just matched ${r.nMatched} data.`)))
+        TE.left(dataNotFoundErrorOf(`Just matched ${r.nMatched} data.`)))
     )
   }
 
-  getMaxOrder(): TE.TaskEither<Error, number> {
+  getMaxOrder(): TE.TaskEither<AppError, number> {
     const findOne = () => TE.tryCatch(
       () => TaskModel.find({ completed: 'N' }).findOne().sort({ 'order': -1 }).exec(),
-      this.throwNewError
+      (error) => databaseErrorOf(`${error}`)
     )
 
     return pipe(
@@ -152,15 +154,9 @@ export class TaskRepoImpl implements TaskRepo {
     )
   }
 
-  throwNewError = (error: any) => new Error(error)
-
   throwIdIsNotAvailedErrorIfCastError = (error: any, id: string) =>
-    error.name == 'CastError' ?
-      new Error(`Task ID ${id} is not availed.`) :
-      error
-
-  taskIdNotFoundError = (id: string) => {
-    return new Error(`Task id ${id} not found`)
-  }
+    error instanceof mongoose.Error.CastError ?
+      validationErrorOf(`Task ID ${id} is not availed.`) as AppError :
+      databaseErrorOf(error) as AppError
 
 }
