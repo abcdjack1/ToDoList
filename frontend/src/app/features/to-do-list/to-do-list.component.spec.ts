@@ -67,7 +67,7 @@ describe('ToDoListComponent', () => {
     })
 
     it(`should hidden add dialog and tasks index increase 1 when 'add()' being called`, async () => {
-      toDoServiceSpy.save.and.returnValue(Promise.resolve(testTask2))
+      toDoServiceSpy.save.and.resolveTo(testTask2)
       component.toDoTasks = [testTask1]
       component.displayAddDialog = true
       await component.add()
@@ -106,7 +106,7 @@ describe('ToDoListComponent', () => {
     })
 
     it(`should task delete when 'delete(task.id)' being called`, async () => {
-      toDoServiceSpy.getToDoTasks.and.returnValue(Promise.resolve([testTask2]))
+      toDoServiceSpy.getToDoTasks.and.resolveTo([testTask2])
       component.toDoTasks = [testTask1, testTask2]
       await component.delete(testTask1.id)
 
@@ -125,7 +125,7 @@ describe('ToDoListComponent', () => {
     it(`should toDoTasks equals 'getToDoTasks()' result when 'onSelectTabChange(0)' being called`, async () => {
       const tasks: Task[] = [testTask1, testTask2]
       component.toDoTasks = []
-      toDoServiceSpy.getToDoTasks.and.returnValue(Promise.resolve(tasks))
+      toDoServiceSpy.getToDoTasks.and.resolveTo(tasks)
       await component.onSelectTabChange({ index: 0 })
 
       expect(component.toDoTasks).toBe(tasks)
@@ -134,7 +134,7 @@ describe('ToDoListComponent', () => {
     it(`should completedTasks equals 'getCompletedTasks()' result when 'onSelectTabChange(1)' being called`, async () => {
       const tasks: Task[] = [testTask1, testTask2]
       component.completedTasks = []
-      toDoServiceSpy.getCompletedTasks.and.returnValue(Promise.resolve(tasks))
+      toDoServiceSpy.getCompletedTasks.and.resolveTo(tasks)
       await component.onSelectTabChange({ index: 1 })
 
       expect(component.completedTasks).toBe(tasks)
@@ -165,7 +165,7 @@ describe('ToDoListComponent', () => {
     it(`should get null when stringToDate input is undefined`, () => {
       const result = component.stringToDate(undefined)
 
-      expect(result).toBeNull
+      expect(result).toBeNull()
     })
 
     it(`should get one hour ago when addOneOur being called`, () => {
