@@ -43,9 +43,8 @@ const postSaveTask = (server: FastifyInstance) => {
 const putUpdateTask = (server: FastifyInstance) => {
   return server.put<{ Params: Id, Body: TaskParams }>(
     '/:id', TaskSchema.putUpdateTaskOption, async (request, response) => {
-      const id = request.params.id
       return await pipe(
-        toDoTaskService.update(id, request.body),
+        toDoTaskService.update(request.params.id, request.body),
         TE.match(
           e => errorHandler(e, response),
           task => response.status(200).send({ task })
@@ -57,9 +56,8 @@ const putUpdateTask = (server: FastifyInstance) => {
 
 const putCompletedTask = (server: FastifyInstance) => {
   return server.put<{ Params: Id }>('/:id/be-done', TaskSchema.putCompletedTaskOption, async (request, response) => {
-    const id = request.params.id
     return await pipe(
-      toDoTaskService.completedById(id),
+      toDoTaskService.completedById(request.params.id),
       TE.match(
         e => errorHandler(e, response),
         task => response.status(200).send({ task })
@@ -70,9 +68,8 @@ const putCompletedTask = (server: FastifyInstance) => {
 
 const deleteTask = (server: FastifyInstance) => {
   return server.delete<{ Params: Id }>('/:id', TaskSchema.deleteTaskOption, async (request, response) => {
-    const id = request.params.id
     return await pipe(
-      toDoTaskService.deleteById(id),
+      toDoTaskService.deleteById(request.params.id),
       TE.match(
         e => errorHandler(e, response),
         _ => response.status(204).send()
