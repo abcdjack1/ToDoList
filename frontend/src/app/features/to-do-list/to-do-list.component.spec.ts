@@ -225,6 +225,22 @@ describe('ToDoListComponent', () => {
       expect(result).toEqual(expectResult)
     })
 
+    it(`should completed task when notificationHandle being called with 'done' action`, async () => {
+      component.toDoTasks = [testTask1, testTask2]
+      await component.notificationHandle('done', testTask1.id)
+
+      expect(component.toDoTasks.length).toEqual(1)
+      expect(component.toDoTasks[0]).toEqual(testTask2)
+    })
+
+    it(`should task reminderTime add one hour when notificationHandle being called with 'wait' action`, async () => {
+      component.toDoTasks = [testTask1, testTask2]
+      await component.notificationHandle('wait', testTask1.id)
+
+      expect(component.toDoTasks.length).toEqual(2)
+      expect(component.toDoTasks[0].reminderTime).toEqual('2999-01-01 02:00:00')
+    })
+
   })
 
   describe('templated test', () => {

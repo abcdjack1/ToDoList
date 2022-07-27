@@ -163,16 +163,19 @@ export class ToDoListComponent implements OnInit {
 
   registNotificationClicks() {
     this.swPush.notificationClicks.subscribe(({ action, notification }) => {
-      const id: string = notification.data.id
-      if (action === 'done') {
-        this.done(id)
-      } else {
-        const task = this.toDoTasks.find(t => t.id === id)
-        if (task) {
-          task.reminderTime = this.addOnehour(task.reminderTime)
-        }
-      }
+      this.notificationHandle(action, notification.data.id)
     })
+  }
+
+  async notificationHandle(action: string, id: string) {
+    if (action === 'done') {
+      await this.done(id)
+    } else {
+      const task = this.toDoTasks.find(t => t.id === id)
+      if (task) {
+        task.reminderTime = this.addOnehour(task.reminderTime)
+      }
+    }
   }
 
   addOnehour(dateAsString: string | undefined) {
