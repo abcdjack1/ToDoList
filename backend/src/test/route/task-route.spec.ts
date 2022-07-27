@@ -6,7 +6,8 @@ import { Response as LightMyRequestResponse } from 'light-my-request'
 import { TaskServiceImpl } from '../../main/service/task-service'
 import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
-import { map } from 'fp-ts/Array'
+import { elem, map } from 'fp-ts/Array'
+import { Eq } from 'fp-ts/lib/Eq'
 
 describe('Testing To-Do List API', () => {
   let server: FastifyInstance
@@ -270,7 +271,7 @@ describe('Testing To-Do List API', () => {
 
   it(`should get uncompleted tasks when 'GET /tasks/to-do'`, async () => {
     const messages = ['test1', 'test2', 'test3']
-    await createListTask(messages)
+    const taskData = await createListTask(messages)
 
     const response = await callAPI(`${urlPath}/to-do`, 'GET')
 
@@ -279,6 +280,14 @@ describe('Testing To-Do List API', () => {
     const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
 
     expect(toDoTasks.length).toBe(messages.length)
+
+    const eqTask: Eq<Task> = {
+      equals: (a: Task, b: Task) => a.message === b.message
+    }
+
+    expect(pipe(toDoTasks, elem(eqTask)(taskData[0]))).toBeTruthy()
+    expect(pipe(toDoTasks, elem(eqTask)(taskData[1]))).toBeTruthy()
+    expect(pipe(toDoTasks, elem(eqTask)(taskData[2]))).toBeTruthy()
   })
 
   it(`should get completed tasks when 'GET /tasks/be-done'`, async () => {
@@ -338,7 +347,7 @@ describe('Testing To-Do List API', () => {
     )()
 
     const expectOrder = (orderInfo: any) => {
-      expect(unCompletedTasks.find(t => t.id == orderInfo.id)?.order).toBe(orderInfo.order)
+      expect(unCompletedTasks.find(t => t.id === orderInfo.id)?.order).toBe(orderInfo.order)
     }
 
     pipe(

@@ -55,25 +55,21 @@ export class TaskRepoImpl implements TaskRepo {
     )
     return pipe(
       findByIdAndUpdate(),
-      TE.chain(t => t == null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
+      TE.chain(t => t === null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
     )
   }
 
   genUpdateData(taskParam: TaskParams) {
-    if (taskParam.reminderTime) {
-      return taskParam
-    } else {
-      return this.taskParamWithUnsetReminderTime(taskParam)
-    }
-  }
-
-  taskParamWithUnsetReminderTime = (taskParam: TaskParams) => {
-    return {
-      message: taskParam.message,
-      completed: taskParam.completed,
-      order: taskParam.order,
-      $unset: { reminderTime: "" }
-    }
+    return pipe(
+      taskParam.reminderTime,
+      O.fromNullable,
+      O.match(
+        () => {
+          return { ...taskParam, $unset: { reminderTime: "" } }
+        },
+        () => taskParam
+      )
+    )
   }
 
   completedById(id: string): TE.TaskEither<AppError, Task> {
@@ -84,7 +80,7 @@ export class TaskRepoImpl implements TaskRepo {
 
     return pipe(
       findByIdAndUpdate(),
-      TE.chain(t => t == null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
+      TE.chain(t => t === null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
     )
   }
 
@@ -96,7 +92,7 @@ export class TaskRepoImpl implements TaskRepo {
 
     return pipe(
       findByIdAndRemove(),
-      TE.chain(t => t == null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
+      TE.chain(t => t === null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
     )
   }
 
@@ -136,7 +132,7 @@ export class TaskRepoImpl implements TaskRepo {
       orderParams,
       genWriteOperations,
       executeBulkWrite,
-      TE.chain(r => r.nModified == orderParams.length ?
+      TE.chain(r => r.nModified === orderParams.length ?
         TE.right(r.nModified) :
         TE.left(dataNotFoundErrorOf(`Just matched ${r.nMatched} data.`)))
     )
@@ -150,7 +146,7 @@ export class TaskRepoImpl implements TaskRepo {
 
     return pipe(
       findOne(),
-      TE.map(t => t == null ? 0 : t.order)
+      TE.map(t => t === null ? 0 : t.order)
     )
   }
 

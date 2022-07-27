@@ -50,7 +50,7 @@ export class ToDoListComponent implements OnInit {
   }
 
   onSelectTabChange(event: any) {
-    if (event.index == 0) {
+    if (event.index === 0) {
       this.getToDoTasks()
     } else {
       this.getCompletedTasks()
