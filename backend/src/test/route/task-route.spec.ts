@@ -196,7 +196,7 @@ describe('Testing To-Do List API', () => {
     expect(befoerCompletedTask.order).toBe(task.order)
   })
 
-  it(`should get error when 'PUT /tasks/:id/be-done' use not availed id `, async () => {
+  it(`should get error mssage when 'PUT /tasks/:id/be-done' use not availed id`, async () => {
     const id = '123456'
     const response = await callAPI(`${urlPath}/${id}/be-done`, 'PUT')
 
@@ -209,7 +209,7 @@ describe('Testing To-Do List API', () => {
     expect(message).toBe(`Task ID ${id} is not availed.`)
   })
 
-  it(`shoud get error mssage when 'PUT /tasks/:id/be-done' use not existed Id`, async () => {
+  it(`should get error mssage when 'PUT /tasks/:id/be-done' use not existed Id`, async () => {
     const notExistedId = '62d44b90b928882b63cadbe2'
 
     const response = await callAPI(`${urlPath}/${notExistedId}/be-done`, 'PUT')
