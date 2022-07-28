@@ -57,190 +57,206 @@ describe('ToDoListComponent', () => {
   });
 
   describe('component test', () => {
-    it(`should clear inputMessage and display addDialog when 'addDialoag()' being called`, () => {
-      component.inputMessage = 'for test'
-      component.displayAddDialog = false
-      component.addDialoag()
 
-      expect(component.inputMessage).toBe('')
-      expect(component.displayAddDialog).toBeTrue()
+    describe('dialog', () => {
+      describe('add', () => {
+        it(`should clear inputMessage and display addDialog when 'addDialog()' being called`, () => {
+          component.inputMessage = 'for test'
+          component.displayAddDialog = false
+          component.addDialoag()
+
+          expect(component.inputMessage).toBe('')
+          expect(component.displayAddDialog).toBeTrue()
+        })
+
+        it(`should hidden add dialog and tasks index increase 1 when 'add()' being called`, async () => {
+          toDoServiceSpy.save.and.resolveTo(testTask2)
+          component.toDoTasks = [testTask1]
+          component.displayAddDialog = true
+          await component.add()
+
+          expect(component.toDoTasks.length).toBe(2)
+          expect(component.displayAddDialog).toBeFalse()
+        })
+      })
+
+      describe('edit', () => {
+        it(`should selectTask equals task and display edit dialog when 'editDialog()' being called`, () => {
+          const task: Task = testTask1
+          component.displayEditDialog = false
+          component.editDialog(task)
+
+          expect(component.selectTask).toBe(task)
+          expect(component.displayEditDialog).toBeTrue()
+        })
+
+        it(`should hidden edit dialog and selectTask.message equals inputMessage when 'edit()' being called`, async () => {
+          toDoServiceSpy.update.and.returnValue(
+            Promise.resolve({ id: '1', message: 'test message 2', completed: 'N', order: 1, reminderTime: '2999-01-01 01:00:00' })
+          )
+          component.displayEditDialog = true
+          component.selectTask = testTask1
+          component.inputMessage = 'test message 2'
+          await component.edit()
+
+          expect(component.selectTask.message).toBe(component.inputMessage)
+          expect(component.displayEditDialog).toBeFalse()
+        })
+      })
     })
 
-    it(`should hidden add dialog and tasks index increase 1 when 'add()' being called`, async () => {
-      toDoServiceSpy.save.and.resolveTo(testTask2)
-      component.toDoTasks = [testTask1]
-      component.displayAddDialog = true
-      await component.add()
+    describe('other', () => {
+      it(`should toDotasks reduce task when that task done`, async () => {
+        component.toDoTasks = [testTask1, testTask2]
+        await component.done(testTask1.id)
 
-      expect(component.toDoTasks.length).toBe(2)
-      expect(component.displayAddDialog).toBeFalse()
+        expect(component.toDoTasks.filter(t => t.id == testTask1.id)).toEqual([])
+      })
+
+      it(`should task delete when 'delete(task.id)' being called`, async () => {
+        toDoServiceSpy.getToDoTasks.and.resolveTo([testTask2])
+        component.toDoTasks = [testTask1, testTask2]
+        await component.delete(testTask1.id)
+
+        expect(component.toDoTasks.filter(t => t.id == testTask1.id)).toEqual([])
+      })
+
+      it(`should reorder tasks when 'onReorder()' being called`, async () => {
+        const tasks: Task[] = [testTask1, testTask2]
+        component.toDoTasks = tasks
+        await component.onReorder()
+
+        expect(component.toDoTasks[0].order).toBe(0)
+        expect(component.toDoTasks[1].order).toBe(1)
+      })
+
+      it(`should toDoTasks equals 'getToDoTasks()' result when 'onSelectTabChange(0)' being called`, async () => {
+        const tasks: Task[] = [testTask1, testTask2]
+        component.toDoTasks = []
+        toDoServiceSpy.getToDoTasks.and.resolveTo(tasks)
+        await component.onSelectTabChange({ index: 0 })
+
+        expect(component.toDoTasks).toBe(tasks)
+      })
+
+      it(`should completedTasks equals 'getCompletedTasks()' result when 'onSelectTabChange(1)' being called`, async () => {
+        const tasks: Task[] = [testTask1, testTask2]
+        component.completedTasks = []
+        toDoServiceSpy.getCompletedTasks.and.resolveTo(tasks)
+        await component.onSelectTabChange({ index: 1 })
+
+        expect(component.completedTasks).toBe(tasks)
+      })
     })
 
-    it(`should selectTask equals task and display edit dialog when 'editDialog()' being called`, () => {
-      const task: Task = testTask1
-      component.displayEditDialog = false
-      component.editDialog(task)
+    describe('date and string convert', () => {
+      it(`should get string result when dateToString being called`, () => {
+        const date = new Date('2022-01-01 01:01:01')
+        const result = component.dateToString(date)
 
-      expect(component.selectTask).toBe(task)
-      expect(component.displayEditDialog).toBeTrue()
+        expect(result).toBe('2022-01-01 01:01:00')
+      })
+
+      it(`should get Undefined when dateToString input is null`, () => {
+        const result = component.dateToString(null)
+
+        expect(result).toBeUndefined()
+      })
+
+
+      it(`should get date result when stringToDate being called`, () => {
+        const dateAsString = '2022-01-01 01:01:01'
+        const date = new Date(dateAsString)
+        const result = component.stringToDate(dateAsString)
+
+        expect(result).toEqual(date)
+      })
+
+      it(`should get null when stringToDate input is undefined`, () => {
+        const result = component.stringToDate(undefined)
+
+        expect(result).toBeNull()
+      })
+
+      it(`should get one hour ago when addOneOur being called`, () => {
+        const result = component.addOnehour('2022-01-01 01:00:00')
+
+        expect(result).toBe('2022-01-01 02:00:00')
+      })
     })
 
-    it(`should hidden edit dialog and selectTask.message equals inputMessage when 'edit()' being called`, async () => {
-      toDoServiceSpy.update.and.returnValue(
-        Promise.resolve({ id: '1', message: 'test message 2', completed: 'N', order: 1, reminderTime: '2999-01-01 01:00:00' })
-      )
-      component.displayEditDialog = true
-      component.selectTask = testTask1
-      component.inputMessage = 'test message 2'
-      await component.edit()
-
-      expect(component.selectTask.message).toBe(component.inputMessage)
-      expect(component.displayEditDialog).toBeFalse()
-    })
-
-    it(`should toDotasks reduce task when that task done`, async () => {
-      component.toDoTasks = [testTask1, testTask2]
-      await component.done(testTask1.id)
-
-      expect(component.toDoTasks.filter(t => t.id == testTask1.id)).toEqual([])
-    })
-
-    it(`should task delete when 'delete(task.id)' being called`, async () => {
-      toDoServiceSpy.getToDoTasks.and.resolveTo([testTask2])
-      component.toDoTasks = [testTask1, testTask2]
-      await component.delete(testTask1.id)
-
-      expect(component.toDoTasks.filter(t => t.id == testTask1.id)).toEqual([])
-    })
-
-    it(`should reorder tasks when 'onReorder()' being called`, async () => {
-      const tasks: Task[] = [testTask1, testTask2]
-      component.toDoTasks = tasks
-      await component.onReorder()
-
-      expect(component.toDoTasks[0].order).toBe(0)
-      expect(component.toDoTasks[1].order).toBe(1)
-    })
-
-    it(`should toDoTasks equals 'getToDoTasks()' result when 'onSelectTabChange(0)' being called`, async () => {
-      const tasks: Task[] = [testTask1, testTask2]
-      component.toDoTasks = []
-      toDoServiceSpy.getToDoTasks.and.resolveTo(tasks)
-      await component.onSelectTabChange({ index: 0 })
-
-      expect(component.toDoTasks).toBe(tasks)
-    })
-
-    it(`should completedTasks equals 'getCompletedTasks()' result when 'onSelectTabChange(1)' being called`, async () => {
-      const tasks: Task[] = [testTask1, testTask2]
-      component.completedTasks = []
-      toDoServiceSpy.getCompletedTasks.and.resolveTo(tasks)
-      await component.onSelectTabChange({ index: 1 })
-
-      expect(component.completedTasks).toBe(tasks)
-    })
-
-    it(`should get string result when dateToString being called`, () => {
-      const date = new Date('2022-01-01 01:01:01')
-      const result = component.dateToString(date)
-
-      expect(result).toBe('2022-01-01 01:01:00')
-    })
-
-    it(`should get Undefined when dateToString input is null`, () => {
-      const result = component.dateToString(null)
-
-      expect(result).toBeUndefined()
-    })
-
-
-    it(`should get date result when stringToDate being called`, () => {
-      const dateAsString = '2022-01-01 01:01:01'
-      const date = new Date(dateAsString)
-      const result = component.stringToDate(dateAsString)
-
-      expect(result).toEqual(date)
-    })
-
-    it(`should get null when stringToDate input is undefined`, () => {
-      const result = component.stringToDate(undefined)
-
-      expect(result).toBeNull()
-    })
-
-    it(`should get one hour ago when addOneOur being called`, () => {
-      const result = component.addOnehour('2022-01-01 01:00:00')
-
-      expect(result).toBe('2022-01-01 02:00:00')
-    })
-
-    it(`should timerMap add notification timer when initNotifications being called`, async () => {
-      component.toDoTasks = [testTask1, testTask2]
-      component.initNotifications()
-
-      expect(component.timerMap[testTask1.id]).toBeDefined()
-      expect(component.timerMap[testTask2.id]).toBeDefined()
-    })
-
-    it(`should timerMap add notification timer when addNotification being called`, async () => {
-      component.addNotification(testTask2)
-
-      expect(component.timerMap[testTask2.id]).toBeDefined()
-    })
-
-    it(`should timerMap remove notification timer when removeNotification being called`, async () => {
-      component.addNotification(testTask2)
-      component.removeNotification(testTask2.id)
-
-      expect(component.timerMap[testTask2.id]).toBeUndefined()
-    })
-
-    it(`should timerMap keep have timer notification timer when rebuildNotification being called`, async () => {
-      component.addNotification(testTask2)
-      await component.rebuildNotification(testTask2)
-
-      expect(component.timerMap[testTask2.id]).toBeDefined()
-    })
-
-    it(`should get notification option when buildNotificationOption being called`, () => {
-      const result = component.buildNotificationOption(testTask2)
-      const expectResult = {
-        body: testTask2.message,
-        data: {
-          id: testTask2.id
-        },
-        requireInteraction: true,
-        actions: [
-          {
-            action: 'done',
-            title: 'Done'
+    describe('notification', () => {
+      it(`should get notification option when buildNotificationOption being called`, () => {
+        const result = component.buildNotificationOption(testTask2)
+        const expectResult = {
+          body: testTask2.message,
+          data: {
+            id: testTask2.id
           },
-          {
-            action: 'wait',
-            title: 'Reminder in an hour'
-          }
-        ]
-      }
+          requireInteraction: true,
+          actions: [
+            {
+              action: 'done',
+              title: 'Done'
+            },
+            {
+              action: 'wait',
+              title: 'Reminder in an hour'
+            }
+          ]
+        }
 
-      expect(result).toEqual(expectResult)
+        expect(result).toEqual(expectResult)
+      })
+
+      describe('timer', () => {
+        it(`should timerMap add notification timer when initNotifications being called`, async () => {
+          component.toDoTasks = [testTask1, testTask2]
+          component.initNotifications()
+
+          expect(component.timerMap[testTask1.id]).toBeDefined()
+          expect(component.timerMap[testTask2.id]).toBeDefined()
+        })
+
+        it(`should timerMap add notification timer when addNotification being called`, async () => {
+          component.addNotification(testTask2)
+
+          expect(component.timerMap[testTask2.id]).toBeDefined()
+        })
+
+        it(`should timerMap remove notification timer when removeNotification being called`, async () => {
+          component.addNotification(testTask2)
+          component.removeNotification(testTask2.id)
+
+          expect(component.timerMap[testTask2.id]).toBeUndefined()
+        })
+
+        it(`should timerMap keep have timer notification timer when rebuildNotification being called`, async () => {
+          component.addNotification(testTask2)
+          await component.rebuildNotification(testTask2)
+
+          expect(component.timerMap[testTask2.id]).toBeDefined()
+        })
+
+        describe('click event', () => {
+          it(`should completed task when notificationHandle being called with 'done' action`, async () => {
+            component.toDoTasks = [testTask1, testTask2]
+            await component.notificationHandle('done', testTask1.id)
+
+            expect(component.toDoTasks.length).toEqual(1)
+            expect(component.toDoTasks[0]).toEqual(testTask2)
+          })
+
+          it(`should task reminderTime add one hour when notificationHandle being called with 'wait' action`, async () => {
+            component.toDoTasks = [testTask1, testTask2]
+            await component.notificationHandle('wait', testTask1.id)
+
+            expect(component.toDoTasks.length).toEqual(2)
+            expect(component.toDoTasks[0].reminderTime).toEqual('2999-01-01 02:00:00')
+          })
+        })
+      })
     })
-
-    it(`should completed task when notificationHandle being called with 'done' action`, async () => {
-      component.toDoTasks = [testTask1, testTask2]
-      await component.notificationHandle('done', testTask1.id)
-
-      expect(component.toDoTasks.length).toEqual(1)
-      expect(component.toDoTasks[0]).toEqual(testTask2)
-    })
-
-    it(`should task reminderTime add one hour when notificationHandle being called with 'wait' action`, async () => {
-      component.toDoTasks = [testTask1, testTask2]
-      await component.notificationHandle('wait', testTask1.id)
-
-      expect(component.toDoTasks.length).toEqual(2)
-      expect(component.toDoTasks[0].reminderTime).toEqual('2999-01-01 02:00:00')
-    })
-
   })
 
   describe('templated test', () => {
