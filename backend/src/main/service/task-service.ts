@@ -58,8 +58,7 @@ export class TaskServiceImpl implements TaskService {
 
     return pipe(
       getMaxOrder,
-      TE.map(maxOrderPlusOne),
-      TE.map(genTaskBody),
+      TE.map(o => pipe(o, maxOrderPlusOne, genTaskBody)),
       TE.chain(saveTask)
     )
   }
