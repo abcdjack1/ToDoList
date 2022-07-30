@@ -39,9 +39,9 @@ describe('Testing To-Do List API', () => {
     )()
   }
 
-  const createListTask = (messages: string[]) => {
+  const createListTask = async (messages: string[]) => {
     const saveTask = (message: string) => taskService.save(message)
-    return pipe(
+    return await pipe(
       messages,
       TE.traverseArray(saveTask),
       TE.match(
@@ -259,7 +259,7 @@ describe('Testing To-Do List API', () => {
 
   describe('GET /tasks/to-do', () => {
     it(`should get uncompleted tasks`, async () => {
-      const messages = ['test1', 'test2', 'test3']
+      const messages = ['test1', 'test2']
       const taskData = await createListTask(messages)
 
       const response = await callAPI(`${urlPath}/to-do`, 'GET')
@@ -276,13 +276,12 @@ describe('Testing To-Do List API', () => {
 
       expect(pipe(toDoTasks, elem(eqTask)(taskData[0]))).toBeTruthy()
       expect(pipe(toDoTasks, elem(eqTask)(taskData[1]))).toBeTruthy()
-      expect(pipe(toDoTasks, elem(eqTask)(taskData[2]))).toBeTruthy()
     })
   })
 
   describe('GET /tasks/be-done', () => {
     it(`should get completed tasks`, async () => {
-      const messages = ['test1', 'test2', 'test3']
+      const messages = ['test1', 'test2']
       const tasks = await createListTask(messages)
 
       tasks.map(async t =>
@@ -301,13 +300,13 @@ describe('Testing To-Do List API', () => {
 
       const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
 
-      expect(toDoTasks.length).toBe(3)
+      expect(toDoTasks.length).toBe(2)
     })
   })
 
   describe('PUT /tasks/orders', () => {
     it(`should reorder tasks`, async () => {
-      const messages = ['test1', 'test2', 'test3']
+      const messages = ['test1', 'test2']
       const tasks: any = await createListTask(messages)
 
       const orderInfos: OrderInfos = []
@@ -321,7 +320,6 @@ describe('Testing To-Do List API', () => {
 
       orderInfos[0].order = 10
       orderInfos[1].order = 100
-      orderInfos[2].order = 1000
 
       const response = await callAPI(`${urlPath}/orders`, 'PUT', orderInfos)
 
