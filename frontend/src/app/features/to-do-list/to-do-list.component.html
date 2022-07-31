@@ -8,7 +8,7 @@
       <button id="addButton" pButton pRipple type="button" label="Add" icon="pi pi-plus"
         class="p-button-rounded p-button-info p-button-sm" (click)="addDialoag()" style="margin: 5px;"></button>
     </div>
-    <p-orderList [value]="toDoTasks" [listStyle]="{'max-height':'30rem'}" filterBy="message" [dragdrop]="true">
+    <p-orderList [value]="toDoTasks" [listStyle]="{'max-height':'30rem'}" filterBy="message">
       <ng-template let-task pTemplate="item">
         <div>
           <a style="float:left;display: inline-flex; align-items: center;">
@@ -74,11 +74,11 @@
 
 <p-dialog header="Edit" p-dialog-titlebar-icon [(visible)]="displayEditDialog" [modal]="true" [style]="{width: '50vw'}"
   [draggable]="false" [resizable]="false" [contentStyle]="{'overflow': 'visible'}">
-  <div>
+  <div style="padding-bottom:10px;">
     <h4 style="width: 10%;float:left;margin: 10px;">message</h4>
     <input id="addInput" type="text" style="width: 70%;" pInputText [(ngModel)]="inputMessage">
   </div>
-  <div>
+  <div style="padding-bottom:10px;">
     <h4 style="width: 10%;float:left;margin: 10px;padding-right:10px;">priority</h4>
     <p-dropdown [options]="priorities" [(ngModel)]="inputPriority"></p-dropdown>
   </div>
