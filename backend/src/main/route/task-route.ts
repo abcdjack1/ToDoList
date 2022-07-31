@@ -3,7 +3,7 @@ import * as TE from 'fp-ts/TaskEither'
 import { pipe } from 'fp-ts/lib/function'
 import { TaskService, TaskServiceImpl } from '../service/task-service'
 import * as TaskSchema from './task-schema'
-import { NewTask, Id, TaskParams, OrderInfos } from '../type/task-type'
+import { NewTask, Id, TaskParams } from '../type/task-type'
 import { match, P } from 'ts-pattern'
 import { AppError } from '../type/error-type'
 
@@ -19,8 +19,7 @@ export const TaskRouter = (
     putCompletedTask,
     deleteTask,
     getToDoTasks,
-    getCompletedTasks,
-    putReorderTasks
+    getCompletedTasks
   )
 
   done()
@@ -31,7 +30,7 @@ const toDoTaskService: TaskService = TaskServiceImpl.getInstance()
 const postSaveTask = (server: FastifyInstance) => {
   return server.post<{ Body: NewTask }>('', TaskSchema.postSaveTaskOption, async (request, response) => {
     return await pipe(
-      toDoTaskService.save(request.body.message, request.body.reminderTime),
+      toDoTaskService.save(request.body),
       TE.match(
         e => errorHandler(e, response),
         task => response.status(201).send({ task })
@@ -97,18 +96,6 @@ const getCompletedTasks = (server: FastifyInstance) => {
       TE.match(
         e => errorHandler(e, response),
         tasks => response.status(200).send({ tasks })
-      )
-    )()
-  })
-}
-
-const putReorderTasks = (server: FastifyInstance) => {
-  return server.put<{ Body: OrderInfos }>('/orders', TaskSchema.putReorderTasksOption, async (request, response) => {
-    return await pipe(
-      toDoTaskService.reorder(request.body),
-      TE.match(
-        e => errorHandler(e, response),
-        modified => response.status(200).send({ modified })
       )
     )()
   })

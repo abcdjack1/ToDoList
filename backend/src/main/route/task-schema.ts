@@ -1,7 +1,14 @@
 import { Type } from '@sinclair/typebox'
 
-export const messageSchema = Type.Object({
+const priorityType = Type.Union([
+  Type.Literal('Low'),
+  Type.Literal('Medium'),
+  Type.Literal('High')
+])
+
+export const newTaskSchema = Type.Object({
   message: Type.String(),
+  priority: priorityType,
   reminderTime: Type.Optional(Type.String({ format: 'date-time' }))
 })
 
@@ -13,7 +20,7 @@ export const task = Type.Object({
   id: Type.String(),
   message: Type.String(),
   completed: Type.String(),
-  order: Type.Number(),
+  priority: priorityType,
   reminderTime: Type.Optional(Type.String({ format: 'date-time' }))
 })
 
@@ -30,16 +37,9 @@ const TasksSchema = Type.Object({
 export const updateTaskRequestBodySchema = Type.Object({
   message: Type.String(),
   completed: Type.String(),
-  order: Type.Number(),
+  priority: Type.String(),
   reminderTime: Type.Optional(Type.String({ format: 'date-time' }))
 })
-
-export const reorderTasksBodyScehma = Type.Array(
-  Type.Object({
-    id: Type.String(),
-    order: Type.Number()
-  })
-)
 
 export const modifiedSchema = Type.Object({
   modified: Type.Number()
@@ -47,7 +47,7 @@ export const modifiedSchema = Type.Object({
 
 export const postSaveTaskOption = {
   schema: {
-    body: messageSchema,
+    body: newTaskSchema,
     response: {
       201: TaskSchema
     }
@@ -91,12 +91,3 @@ export const getToDoTasksOption = {
 }
 
 export const getCompletedTasksOption = getToDoTasksOption
-
-export const putReorderTasksOption = {
-  schema: {
-    body: reorderTasksBodyScehma,
-    response: {
-      200: modifiedSchema
-    }
-  }
-}

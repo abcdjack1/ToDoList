@@ -8,25 +8,26 @@
       <button id="addButton" pButton pRipple type="button" label="Add" icon="pi pi-plus"
         class="p-button-rounded p-button-info p-button-sm" (click)="addDialoag()" style="margin: 5px;"></button>
     </div>
-    <p-orderList [value]="toDoTasks" [listStyle]="{'max-height':'30rem'}" filterBy="message" [dragdrop]="true"
-      (onReorder)="onReorder()">
+    <p-orderList [value]="toDoTasks" [listStyle]="{'max-height':'30rem'}" filterBy="message" [dragdrop]="true">
       <ng-template let-task pTemplate="item">
         <div>
-          <h3 style="float:left">{{task.message}}</h3>
-        </div>
-        <div style="float:right">
-          <button pButton pRipple type="button" label="Done" icon="pi pi-check"
-            class="p-button-rounded p-button-success p-button-sm done-button" (click)="done(task.id)"
-            style="margin: 5px;"></button>
-          <button pButton pRipple type="button" label="Edit" icon="pi pi-pencil"
-            class="p-button-rounded p-button-warning p-button-sm edit-button" (click)="editDialog(task)"
-            style="margin: 5px;"></button>
-          <button pButton pRipple type="button" label="Delete" icon="pi pi-trash p-button-sm"
-            class="p-button-rounded p-button-danger p-button-sm delete-button" (click)="delete(task.id)"
-            style="margin: 5px;"></button>
-        </div>
-        <div>
-          <h3 style="float:right">{{task.reminderTime | date : 'yyyy-MM-dd HH:mm'}}</h3>
+          <a style="float:left;display: inline-flex; align-items: center;">
+            <p-image src="assets/images/priority/{{task.priority}}.png" width="30"></p-image>
+            <h3 style="padding-left:10px;">{{task.message}}</h3>
+          </a>
+          <a style="float:right;display: inline-flex; align-items: center;">
+            <p-image *ngIf="isExpired(task.reminderTime)" src="assets/images/expired.png" width="60"></p-image>
+            <h3 style="padding-left:10px;">{{task.reminderTime | date : 'yyyy-MM-dd HH:mm'}}</h3>
+            <button pButton pRipple type="button" label="Done" icon="pi pi-check"
+              class="p-button-rounded p-button-success p-button-sm done-button" (click)="done(task.id)"
+              style="margin: 5px;"></button>
+            <button pButton pRipple type="button" label="Edit" icon="pi pi-pencil"
+              class="p-button-rounded p-button-warning p-button-sm edit-button" (click)="editDialog(task)"
+              style="margin: 5px;"></button>
+            <button pButton pRipple type="button" label="Delete" icon="pi pi-trash p-button-sm"
+              class="p-button-rounded p-button-danger p-button-sm delete-button" (click)="delete(task.id)"
+              style="margin: 5px;"></button>
+          </a>
         </div>
       </ng-template>
     </p-orderList>
@@ -50,32 +51,43 @@
 
 <p-dialog header="Add" [(visible)]="displayAddDialog" [modal]="true" [style]="{width: '50vw'}" [draggable]="false"
   [resizable]="false" [contentStyle]="{'overflow': 'visible'}">
-  <div style="width: 20%;">
-    <h4 style="float:left;margin: 10px;">message</h4>
+  <div style="padding-bottom:10px;">
+    <h4 style="width: 10%;float:left;margin: 10px;">message</h4>
+    <input id="addInput" type="text" style="width: 70%;" pInputText [(ngModel)]="inputMessage">
   </div>
-  <input id="addInput" type="text" style="width: 70%;" pInputText [(ngModel)]="inputMessage">
-  <div style="width: 20%;margin: 10px;">
-    <h4 style="float:left">reminder&nbsp;</h4>
+  <div style="padding-bottom:10px;">
+    <h4 style="width: 10%;float:left;margin: 10px;padding-right:10px;">priority</h4>
+    <p-dropdown [options]="priorities" [(ngModel)]="inputPriority"></p-dropdown>
   </div>
-  <p-calendar [(ngModel)]="inputReminderTime" [showTime]="true" inputId="time" [showButtonBar]="true">
-  </p-calendar>
+  <div>
+    <h4 style="width: 10%;float:left;margin: 10px;padding-right:10px;">reminder</h4>
+    <p-calendar [(ngModel)]="inputReminderTime" [showTime]="true" inputId="time" [showButtonBar]="true">
+    </p-calendar>
+    <a style="color:red;padding-left:10px;">{{ validationFailedMessage }}</a>
+  </div>
   <ng-template pTemplate="footer">
     <button id="saveButton" pButton pRipple type="button" label="Save" icon="pi pi-save"
       [disabled]="inputMessage.trim() === ''" class="p-button-rounded p-button-info p-button-sm"
       (click)="add()"></button>
   </ng-template>
 </p-dialog>
+
 <p-dialog header="Edit" p-dialog-titlebar-icon [(visible)]="displayEditDialog" [modal]="true" [style]="{width: '50vw'}"
   [draggable]="false" [resizable]="false" [contentStyle]="{'overflow': 'visible'}">
-  <div style="width: 20%;">
-    <h4 style="float:left;margin: 10px;">message</h4>
+  <div>
+    <h4 style="width: 10%;float:left;margin: 10px;">message</h4>
+    <input id="addInput" type="text" style="width: 70%;" pInputText [(ngModel)]="inputMessage">
   </div>
-  <input id="addInput" type="text" style="width: 70%;" pInputText [(ngModel)]="inputMessage">
-  <div style="width: 20%;margin: 10px;">
-    <h4 style="float:left">reminder&nbsp;</h4>
+  <div>
+    <h4 style="width: 10%;float:left;margin: 10px;padding-right:10px;">priority</h4>
+    <p-dropdown [options]="priorities" [(ngModel)]="inputPriority"></p-dropdown>
   </div>
-  <p-calendar [(ngModel)]="inputReminderTime" [showTime]="true" inputId="time" [showButtonBar]="true">
-  </p-calendar>
+  <div>
+    <h4 style="width: 10%;float:left;margin: 10px;padding-right:10px;">reminder</h4>
+    <p-calendar [(ngModel)]="inputReminderTime" [showTime]="true" inputId="time" [showButtonBar]="true">
+    </p-calendar>
+    <a style="color:red;padding-left:10px;">{{ validationFailedMessage }}</a>
+  </div>
   <ng-template pTemplate="footer">
     <button id="editSaveButton" pButton pRipple type="button" label="Save" icon="pi pi-save"
       [disabled]="inputMessage.trim() === ''" class="p-button-rounded p-button-info p-button-sm"

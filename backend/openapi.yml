@@ -39,7 +39,7 @@ paths:
                     "id": "62d44b90b928882b63cadbe2",
                     "message": "test task message",
                     "completed": "N",
-                    "order": "6",
+                    "priority": "Low",
                   }
         "400":
           description: Bad request
@@ -66,7 +66,11 @@ paths:
               type: object
               $ref: "#/components/schemas/TaskParams"
             example:
-              { "message": "test task message", "completed": "N", "order": 10 }
+              {
+                "message": "test task message",
+                "completed": "N",
+                "priority": "Low",
+              }
       responses:
         "200":
           description: Successful
@@ -83,7 +87,7 @@ paths:
                     "id": "62d44b90b928882b63cadbe2",
                     "message": "test task message",
                     "completed": "N",
-                    "order": 10,
+                    "priority": "Low",
                   }
         "400":
           description: Task id not found or not availed.
@@ -143,7 +147,7 @@ paths:
                     "id": "62d44b90b928882b63cadbe2",
                     "message": "test task message",
                     "completed": "Y",
-                    "order": 10,
+                    "priority": "Low",
                   }
         "400":
           description: Task id not found or not availed.
@@ -178,13 +182,13 @@ paths:
                       "id": "62d44b90b928882b63cadbe2",
                       "message": "test task message",
                       "completed": "N",
-                      "order": 0,
+                      "priority": "Low",
                     },
                     {
                       "id": "62d44c3d6b3fc4f516d2f6a0",
                       "message": "test task message2",
                       "completed": "N",
-                      "order": 1,
+                      "priority": "Low",
                     },
                   ]
         "400":
@@ -218,13 +222,13 @@ paths:
                       "id": "62d44b90b928882b63cadbe2",
                       "message": "test task message",
                       "completed": "Y",
-                      "order": 0,
+                      "priority": "Low",
                     },
                     {
                       "id": "62d44c3d6b3fc4f516d2f6a0",
                       "message": "test task message2",
                       "completed": "Y",
-                      "order": 1,
+                      "priority": "Low",
                     },
                   ]
         "400":
@@ -236,40 +240,6 @@ paths:
                 properties:
                   task:
                     $ref: "#/components/schemas/400ErrorResponse"
-  /tasks/orders:
-    put:
-      summary: Reorder tasks
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: array
-              items:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  order:
-                    type: number
-            example:
-              [
-                { "id": "62d44b90b928882b63cadbe2", "order": 10 },
-                { "id": "62d44c3d6b3fc4f516d2f6a0", "order": 20 },
-              ]
-      responses:
-        "204":
-          description: Successful
-        "400":
-          description: matched data less than request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  task:
-                    $ref: "#/components/schemas/400ErrorResponse"
-              example:
-                task: { message: "Just matched 1 data." }
 
 components:
   schemas:
@@ -282,22 +252,22 @@ components:
           type: string
         completed:
           type: string
-        order:
-          type: number
+        priority:
+          type: string
     TaskParams:
       properties:
         message:
           type: string
         completed:
           type: string
-        order:
-          type: number
+        priority:
+          type: string
         reminderTime:
           type: string
       required:
         - message
         - completed
-        - order
+        - priority
     400ErrorResponse:
       type: object
       properties:

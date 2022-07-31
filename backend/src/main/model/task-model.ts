@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model } from "mongoose";
 import { Task } from "../type/task-type";
 
 const taskSchema: Schema = new Schema({
@@ -10,8 +10,8 @@ const taskSchema: Schema = new Schema({
     type: String,
     required: true
   },
-  order: {
-    type: Number,
+  priority: {
+    type: String,
     required: true
   },
   reminderTime: {

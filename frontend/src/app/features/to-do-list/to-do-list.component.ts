@@ -12,16 +12,20 @@ import { SwPush } from '@angular/service-worker'
 })
 export class ToDoListComponent implements OnInit {
 
+  readonly priorities = ['Low', 'Medium', 'High']
+  readonly sortMap = new Map([['High', 2], ['Medium', 1], ['Low', 0]])
   toDoTasks!: Task[]
   completedTasks!: Task[]
   inputMessage: string = ''
+  inputPriority: string = 'Medium'
   inputReminderTime: Date | null = null
   displayAddDialog: boolean = false
   displayEditDialog: boolean = false
-  selectTask: Task = { id: '', message: '', completed: '', order: 0 }
+  selectTask: Task = { id: '', message: '', completed: '', priority: 'Medium' }
   sw: ServiceWorkerRegistration | undefined = undefined
   datePipe: DatePipe = new DatePipe('en-US')
-  timerMap = Object.create({})
+  timerMap = new Map<string, Subscription>()
+  validationFailedMessage = ''
 
   constructor(private toDoService: ToDoService, private swPush: SwPush) { }
 
@@ -43,6 +47,23 @@ export class ToDoListComponent implements OnInit {
 
   private async getToDoTasks() {
     this.toDoTasks = await this.toDoService.getToDoTasks()
+    this.sortTasks()
+  }
+
+  sortTasks() {
+    this.toDoTasks.sort((x, y) => {
+      const xSort = this.sortMap.get(x.priority)
+      const ySort = this.sortMap.get(y.priority)
+      if (xSort !== undefined && ySort !== undefined) {
+        if (xSort > ySort) {
+          return -1
+        } else if (xSort < ySort) {
+          return 1
+        }
+      }
+      return 0
+    })
+    this.toDoTasks = this.toDoTasks.filter(t => true)
   }
 
   private async getCompletedTasks() {
@@ -58,32 +79,51 @@ export class ToDoListComponent implements OnInit {
   }
 
   addDialoag() {
-    this.inputMessage = ""
+    this.inputMessage = ''
+    this.inputPriority = 'Medium'
     this.inputReminderTime = null
+    this.validationFailedMessage = ''
     this.displayAddDialog = true
   }
 
   async add() {
-    const task = await this.toDoService.save(this.inputMessage, this.dateToString(this.inputReminderTime))
-    this.toDoTasks.push(task)
-    this.toDoTasks = this.toDoTasks.filter(t => true)
-    this.displayAddDialog = false
-    this.addNotification(task)
+    if (this.validation()) {
+      const task = await this.toDoService.save(this.inputMessage, this.inputPriority, this.dateToString(this.inputReminderTime))
+      this.toDoTasks.push(task)
+      this.displayAddDialog = false
+      this.addNotification(task)
+      this.sortTasks()
+    }
+  }
+
+  validation() {
+    if (this.inputPriority === 'High' && (this.inputReminderTime === null || this.inputReminderTime.getTime() < Date.now())) {
+      this.validationFailedMessage = 'High priority task need available reminder time.'
+      return false
+    }
+    this.validationFailedMessage = ''
+    return true
   }
 
   editDialog(task: Task) {
     this.inputMessage = task.message
+    this.inputPriority = task.priority
     this.inputReminderTime = this.stringToDate(task.reminderTime)
     this.selectTask = task
+    this.validationFailedMessage = ''
     this.displayEditDialog = true
   }
 
   async edit() {
-    this.selectTask.message = this.inputMessage
-    this.selectTask.reminderTime = this.dateToString(this.inputReminderTime)
-    const task = await this.toDoService.update(this.selectTask)
-    this.displayEditDialog = false
-    this.rebuildNotification(task)
+    if (this.validation()) {
+      this.selectTask.message = this.inputMessage
+      this.selectTask.priority = this.inputPriority
+      this.selectTask.reminderTime = this.dateToString(this.inputReminderTime)
+      const task = await this.toDoService.update(this.selectTask)
+      this.displayEditDialog = false
+      this.rebuildNotification(task)
+      this.sortTasks()
+    }
   }
 
   async done(id: string) {
@@ -94,25 +134,8 @@ export class ToDoListComponent implements OnInit {
 
   async delete(id: string) {
     await this.toDoService.delete(id)
-    this.getToDoTasks()
+    this.toDoTasks = this.toDoTasks.filter(t => t.id !== id)
     this.removeNotification(id)
-  }
-
-  async onReorder() {
-    await this.reorderTaskByIndex(this.toDoTasks);
-  }
-
-  private async reorderTaskByIndex(tasks: Task[]) {
-    const orderInfos: any[] = []
-    tasks.forEach((value, index) => {
-      value.order = index;
-      const orderInfo = {
-        id: value.id,
-        order: index
-      }
-      orderInfos.push(orderInfo)
-    })
-    await this.toDoService.reorder(orderInfos)
   }
 
   initNotifications() {
@@ -122,17 +145,17 @@ export class ToDoListComponent implements OnInit {
   addNotification(task: Task) {
     const date = this.stringToDate(task.reminderTime)
     if (date && date > new Date()) {
-      this.timerMap[task.id] = timer(date).subscribe(() => {
+      this.timerMap.set(task.id, timer(date).subscribe(() => {
         this.sw?.showNotification('Task reminder', this.buildNotificationOption(task))
-      })
+      }))
     }
   }
 
   removeNotification(id: string) {
-    if (this.timerMap[id]) {
-      const notification = this.timerMap[id] as Subscription
+    const notification = this.timerMap.get(id)
+    if (notification) {
       notification.unsubscribe()
-      this.timerMap[id] = undefined
+      this.timerMap.delete(id)
     }
   }
 
@@ -197,6 +220,14 @@ export class ToDoListComponent implements OnInit {
       return new Date(dateAsString)
     }
     return null
+  }
+
+  isExpired(reminderTime: string) {
+    const time = this.stringToDate(reminderTime)
+    if (time) {
+      return time.getTime() < Date.now()
+    }
+    return false
   }
 
 }

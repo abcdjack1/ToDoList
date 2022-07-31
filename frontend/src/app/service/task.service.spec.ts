@@ -18,7 +18,7 @@ describe('ToDoService', () => {
     service = TestBed.inject(ToDoService)
     httpMock = TestBed.inject(HttpTestingController)
 
-    testTask = { id: '1', message: 'msg1', completed: 'N', order: 1, reminderTime: '2999-01-01 01:00:00' }
+    testTask = { id: '1', message: 'msg1', completed: 'N', priority: 'Medium', reminderTime: '2999-01-01 01:00:00' }
   })
 
   it('should be created', () => {
@@ -41,14 +41,15 @@ describe('ToDoService', () => {
 
   it('should httpClient send POST /tasks API when save() being called', async () => {
     const message = 'test1'
+    const priority = 'Low'
     const reminderTime = '2022-01-01 01:00:00'
 
-    service.save(message, reminderTime)
+    service.save(message, priority, reminderTime)
 
     const req = httpMock.expectOne(`${tasksApiUtl}`)
 
     expect(req.request.method).toEqual('POST')
-    expect(req.request.body).toEqual({ message: message, reminderTime: reminderTime })
+    expect(req.request.body).toEqual({ message: message, priority: priority, reminderTime: reminderTime })
   })
 
   it('should httpClient send PUT /tasks/:id API when update() being called', async () => {

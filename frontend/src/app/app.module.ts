@@ -16,6 +16,8 @@ import { FormsModule } from '@angular/forms'
 import { ServiceWorkerModule } from '@angular/service-worker'
 import { environment } from '../environments/environment'
 import { CalendarModule } from 'primeng/calendar'
+import { DropdownModule } from 'primeng/dropdown'
+import { ImageModule } from 'primeng/image'
 
 
 @NgModule({
@@ -35,6 +37,8 @@ import { CalendarModule } from 'primeng/calendar'
     InputTextModule,
     FormsModule,
     CalendarModule,
+    DropdownModule,
+    ImageModule,
     ServiceWorkerModule.register('ngsw-worker.js', {
       enabled: environment.production,
       registrationStrategy: 'registerWhenStable:30000'

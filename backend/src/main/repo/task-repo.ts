@@ -1,5 +1,5 @@
 import TaskModel from '../model/task-model'
-import { OrderInfos, TaskParams, Task } from '../type/task-type'
+import { TaskParams, Task } from '../type/task-type'
 import * as TE from 'fp-ts/TaskEither'
 import * as O from 'fp-ts/Option'
 import { pipe } from 'fp-ts/lib/function'
@@ -13,8 +13,6 @@ export interface TaskRepo {
   deleteById(id: string): TE.TaskEither<AppError, Task>
   getUnCompletedTasks(): TE.TaskEither<AppError, Task[]>
   getCompletedTasks(): TE.TaskEither<AppError, Task[]>
-  reorder(orderParam: OrderInfos): TE.TaskEither<AppError, Number>
-  getMaxOrder(): TE.TaskEither<AppError, number>
 }
 
 export class TaskRepoImpl implements TaskRepo {
@@ -98,7 +96,7 @@ export class TaskRepoImpl implements TaskRepo {
 
   getUnCompletedTasks(): TE.TaskEither<AppError, Task[]> {
     return TE.tryCatch(
-      () => TaskModel.find({ completed: 'N' }).sort('order').exec(),
+      () => TaskModel.find({ completed: 'N' }).exec(),
       (error) => databaseErrorOf(`${error}`)
     )
   }
@@ -107,46 +105,6 @@ export class TaskRepoImpl implements TaskRepo {
     return TE.tryCatch(
       () => TaskModel.find({ completed: 'Y' }).sort({ 'updatedAt': -1 }).exec(),
       (error) => databaseErrorOf(`${error}`)
-    )
-  }
-
-  reorder(orderParams: OrderInfos): TE.TaskEither<AppError, Number> {
-    const genWriteOperations = (orderParams: OrderInfos) => {
-      return orderParams.map(p => {
-        return {
-          'updateOne': {
-            'filter': { '_id': p.id },
-            'update': { '$set': { order: p.order } }
-          }
-        }
-      })
-    }
-    const executeBulkWrite = (writeOperations: any[]) => {
-      return TE.tryCatch(
-        () => TaskModel.bulkWrite(writeOperations),
-        (error) => databaseErrorOf(`${error}`) as AppError
-      )
-    }
-
-    return pipe(
-      orderParams,
-      genWriteOperations,
-      executeBulkWrite,
-      TE.chain(r => r.nModified === orderParams.length ?
-        TE.right(r.nModified) :
-        TE.left(dataNotFoundErrorOf(`Just matched ${r.nMatched} data.`)))
-    )
-  }
-
-  getMaxOrder(): TE.TaskEither<AppError, number> {
-    const findOne = () => TE.tryCatch(
-      () => TaskModel.find({ completed: 'N' }).findOne().sort({ 'order': -1 }).exec(),
-      (error) => databaseErrorOf(`${error}`)
-    )
-
-    return pipe(
-      findOne(),
-      TE.map(t => t === null ? 0 : t.order)
     )
   }
 

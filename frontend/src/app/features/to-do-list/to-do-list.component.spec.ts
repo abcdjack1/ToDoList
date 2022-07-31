@@ -8,6 +8,8 @@ import { FormsModule } from '@angular/forms'
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations'
 import { CalendarModule } from 'primeng/calendar'
 import { SwPush } from '@angular/service-worker'
+import { DropdownModule } from 'primeng/dropdown'
+import { ImageModule } from 'primeng/image'
 
 import { ToDoListComponent } from './to-do-list.component'
 import { Task } from 'src/app/types/tasks'
@@ -34,7 +36,9 @@ describe('ToDoListComponent', () => {
         DialogModule,
         FormsModule,
         BrowserAnimationsModule,
-        CalendarModule
+        CalendarModule,
+        DropdownModule,
+        ImageModule
       ],
       providers: [
         { provide: ToDoService, useValue: toDoSpy },
@@ -48,8 +52,8 @@ describe('ToDoListComponent', () => {
     fixture = TestBed.createComponent(ToDoListComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    testTask1 = { id: '1', message: 'msg1', completed: 'N', order: 1, reminderTime: '2999-01-01 01:00:00' }
-    testTask2 = { id: '2', message: 'msg2', completed: 'N', order: 0, reminderTime: '2999-01-01 01:00:00' }
+    testTask1 = { id: '1', message: 'msg1', completed: 'N', priority: 'Medium', reminderTime: '2999-01-01 01:00:00' }
+    testTask2 = { id: '2', message: 'msg2', completed: 'N', priority: 'Low', reminderTime: '2999-01-01 01:00:00' }
   });
 
   it('should create', () => {
@@ -91,15 +95,20 @@ describe('ToDoListComponent', () => {
         })
 
         it(`should hidden edit dialog and selectTask.message equals inputMessage when 'edit()' being called`, async () => {
+          component.toDoTasks = [testTask1, testTask2]
           toDoServiceSpy.update.and.returnValue(
-            Promise.resolve({ id: '1', message: 'test message 2', completed: 'N', order: 1, reminderTime: '2999-01-01 01:00:00' })
+            Promise.resolve({ id: '1', message: 'test message 2', completed: 'N', priority: 'Medium', reminderTime: '2999-01-01 01:00:00' })
           )
           component.displayEditDialog = true
           component.selectTask = testTask1
           component.inputMessage = 'test message 2'
+          component.inputPriority = 'Medium'
+          component.inputReminderTime = component.stringToDate('2999-01-01 01:00:00')
           await component.edit()
 
           expect(component.selectTask.message).toBe(component.inputMessage)
+          expect(component.selectTask.priority).toBe(component.inputPriority)
+          expect(component.selectTask.reminderTime).toBe(component.dateToString(component.inputReminderTime))
           expect(component.displayEditDialog).toBeFalse()
         })
       })
@@ -114,20 +123,10 @@ describe('ToDoListComponent', () => {
       })
 
       it(`should task delete when 'delete(task.id)' being called`, async () => {
-        toDoServiceSpy.getToDoTasks.and.resolveTo([testTask2])
         component.toDoTasks = [testTask1, testTask2]
         await component.delete(testTask1.id)
 
         expect(component.toDoTasks.filter(t => t.id == testTask1.id)).toEqual([])
-      })
-
-      it(`should reorder tasks when 'onReorder()' being called`, async () => {
-        const tasks: Task[] = [testTask1, testTask2]
-        component.toDoTasks = tasks
-        await component.onReorder()
-
-        expect(component.toDoTasks[0].order).toBe(0)
-        expect(component.toDoTasks[1].order).toBe(1)
       })
 
       it(`should toDoTasks equals 'getToDoTasks()' result when 'onSelectTabChange(0)' being called`, async () => {
@@ -136,7 +135,7 @@ describe('ToDoListComponent', () => {
         toDoServiceSpy.getToDoTasks.and.resolveTo(tasks)
         await component.onSelectTabChange({ index: 0 })
 
-        expect(component.toDoTasks).toBe(tasks)
+        expect(component.toDoTasks).toEqual(tasks)
       })
 
       it(`should completedTasks equals 'getCompletedTasks()' result when 'onSelectTabChange(1)' being called`, async () => {
@@ -146,6 +145,60 @@ describe('ToDoListComponent', () => {
         await component.onSelectTabChange({ index: 1 })
 
         expect(component.completedTasks).toBe(tasks)
+      })
+    })
+
+    describe('tasks sort', () => {
+      it(`should sort task by priority 'High -> Medium -> Low' when sortTasks() being called`, async () => {
+        const highTask1 = { ...testTask1, priority: 'High' }
+        const highTask2 = { ...testTask1, priority: 'High' }
+        const mediumTask1 = { ...testTask1, priority: 'Medium' }
+        const mediumTask2 = { ...testTask1, priority: 'Medium' }
+        const lowTask1 = { ...testTask1, priority: 'Low' }
+        const lowTask2 = { ...testTask1, priority: 'Low' }
+        component.toDoTasks = [mediumTask1, lowTask1, mediumTask2, highTask2, lowTask2, highTask1]
+
+        component.sortTasks()
+
+        expect(component.toDoTasks[0].priority).toBe('High')
+        expect(component.toDoTasks[1].priority).toBe('High')
+        expect(component.toDoTasks[2].priority).toBe('Medium')
+        expect(component.toDoTasks[3].priority).toBe('Medium')
+        expect(component.toDoTasks[4].priority).toBe('Low')
+        expect(component.toDoTasks[5].priority).toBe('Low')
+      })
+    })
+
+    describe('expired check', () => {
+      it(`should get false when time not expired`, async () => {
+        expect(component.isExpired('2099-01-01 01:00:00')).toBeFalse()
+      })
+
+      it(`should get true when time was expired`, async () => {
+        expect(component.isExpired('2011-01-01 01:00:00')).toBeTrue()
+      })
+    })
+
+    describe('priority and reminderTime validation', () => {
+      it(`should get true when 'validation()' being called and inputPriority is 'High' and inputReminderTime is available`, async () => {
+        component.inputPriority = 'High'
+        component.inputReminderTime = component.stringToDate('2099-01-01 01:00:00')
+
+        expect(component.validation()).toBeTrue()
+      })
+
+      it(`should get false when 'validation()' being called and use not available reminder time.`, async () => {
+        component.inputPriority = 'High'
+        component.inputReminderTime = component.stringToDate('2022-01-01 01:00:00')
+
+        expect(component.validation()).toBeFalse()
+      })
+
+      it(`should get false when 'validation()' being called and inputPriority is 'High' and inputReminderTime is null`, async () => {
+        component.inputPriority = 'High'
+        component.inputReminderTime = null
+
+        expect(component.validation()).toBeFalse()
       })
     })
 
@@ -214,28 +267,28 @@ describe('ToDoListComponent', () => {
           component.toDoTasks = [testTask1, testTask2]
           component.initNotifications()
 
-          expect(component.timerMap[testTask1.id]).toBeDefined()
-          expect(component.timerMap[testTask2.id]).toBeDefined()
+          expect(component.timerMap.get(testTask1.id)).toBeDefined()
+          expect(component.timerMap.get(testTask2.id)).toBeDefined()
         })
 
         it(`should timerMap add notification timer when addNotification being called`, async () => {
           component.addNotification(testTask2)
 
-          expect(component.timerMap[testTask2.id]).toBeDefined()
+          expect(component.timerMap.get(testTask2.id)).toBeDefined()
         })
 
         it(`should timerMap remove notification timer when removeNotification being called`, async () => {
           component.addNotification(testTask2)
           component.removeNotification(testTask2.id)
 
-          expect(component.timerMap[testTask2.id]).toBeUndefined()
+          expect(component.timerMap.get(testTask2.id)).toBeUndefined()
         })
 
         it(`should timerMap keep have timer notification timer when rebuildNotification being called`, async () => {
           component.addNotification(testTask2)
           await component.rebuildNotification(testTask2)
 
-          expect(component.timerMap[testTask2.id]).toBeDefined()
+          expect(component.timerMap.get(testTask2.id)).toBeDefined()
         })
 
         describe('click event', () => {
