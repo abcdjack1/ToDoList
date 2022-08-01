@@ -55,6 +55,10 @@ describe('Testing To-Do List API', () => {
     )
   }
 
+  const runtimeError = (errorMessage: string) => {
+    throw runtimeErrorOf(errorMessage)
+  }
+
   const newTaskData: NewTask = {
     message: 'test',
     priority: 'Medium'
@@ -71,7 +75,7 @@ describe('Testing To-Do List API', () => {
       await pipe(
         callAPI(`${urlPath}`, 'POST', { message: newTaskData.message, priority: newTaskData.priority }),
         TE.match(
-          (error) => { throw error },
+          (error) => runtimeError(`Arrange or act failed. ${error}`),
           response => {
             expect(response.statusCode).toBe(201)
 
@@ -102,7 +106,7 @@ describe('Testing To-Do List API', () => {
         TE.bind("task", () => saveTask(newTaskData)),
         TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams)),
         TE.match(
-          (error) => { throw error },
+          (error) => runtimeError(`Arrange or act failed. ${error}`),
           ({ task, response }) => {
             expect(response.statusCode).toBe(200)
 
@@ -130,7 +134,7 @@ describe('Testing To-Do List API', () => {
         TE.bind("task", () => saveTask({ ...newTaskData, reminderTime: '2099-01-01 01:00:00' })),
         TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams)),
         TE.match(
-          (error) => { throw error },
+          (error) => runtimeError(`Arrange or act failed. ${error}`),
           ({ task, response }) => {
             expect(response.statusCode).toBe(200)
 
@@ -157,7 +161,7 @@ describe('Testing To-Do List API', () => {
       await pipe(
         callAPI(`${urlPath}/${notExistedId}`, 'PUT', taskParams),
         TE.match(
-          (error) => { throw error },
+          (error) => runtimeError(`Arrange or act failed. ${error}`),
           response => {
             expect(response.statusCode).toBe(400)
 
@@ -182,7 +186,7 @@ describe('Testing To-Do List API', () => {
       await pipe(
         callAPI(`${urlPath}/${notAvailedId}`, 'PUT', taskParams),
         TE.match(
-          (error) => { throw error },
+          (error) => runtimeError(`Arrange or act failed. ${error}`),
           response => {
             expect(response.statusCode).toBe(400)
 
@@ -205,7 +209,7 @@ describe('Testing To-Do List API', () => {
         TE.bind("task", () => saveTask(newTaskData)),
         TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}/be-done`, 'PUT')),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           ({ task, response }) => {
             expect(response.statusCode).toBe(200)
 
@@ -226,7 +230,7 @@ describe('Testing To-Do List API', () => {
       await pipe(
         callAPI(`${urlPath}/${id}/be-done`, 'PUT'),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           (response) => {
             expect(response.statusCode).toBe(400)
 
@@ -246,7 +250,7 @@ describe('Testing To-Do List API', () => {
       await pipe(
         callAPI(`${urlPath}/${notExistedId}/be-done`, 'PUT'),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           (response) => {
             expect(response.statusCode).toBe(400)
 
@@ -274,7 +278,7 @@ describe('Testing To-Do List API', () => {
         ),
         TE.chain(_ => taskService.getUnCompletedTasks()),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           tasks => {
             expect(tasks.length).toBe(0)
           }
@@ -288,7 +292,7 @@ describe('Testing To-Do List API', () => {
       await pipe(
         callAPI(`${urlPath}/${notExistedId}`, 'DELETE'),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           (response) => {
             expect(response.statusCode).toBe(400)
 
@@ -308,7 +312,7 @@ describe('Testing To-Do List API', () => {
       await pipe(
         callAPI(`${urlPath}/${id}`, 'DELETE'),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           (response) => {
             expect(response.statusCode).toBe(400)
 
@@ -335,7 +339,7 @@ describe('Testing To-Do List API', () => {
         TE.bind('arrangeData', () => arrangeTestData()),
         TE.bind('response', () => callAPI(`${urlPath}/to-do`, 'GET')),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           ({ arrangeData, response }) => {
 
             expect(response.statusCode).toBe(200)
@@ -369,7 +373,7 @@ describe('Testing To-Do List API', () => {
         arrangeTestData(),
         TE.chain(_ => callAPI(`${urlPath}/be-done`, 'GET')),
         TE.match(
-          error => { throw error },
+          error => runtimeError(`Arrange or act failed. ${error}`),
           (response) => {
             expect(response.statusCode).toBe(200)
 
