@@ -42,8 +42,4 @@ export class ToDoService {
     await lastValueFrom(this.http.delete<{ task: Task }>(`${this.tasksApiUtl}/${id}`, {}))
   }
 
-  async reorder(orderParams: any[]) {
-    await lastValueFrom(this.http.put<{ task: Task }>(`${this.tasksApiUtl}/orders`, orderParams))
-  }
-
 }

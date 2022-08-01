@@ -77,21 +77,4 @@ describe('ToDoService', () => {
     expect(req.request.method).toEqual('PUT')
   })
 
-  it('should httpClient send PUT /tasks/orders API when reorder() being called', async () => {
-    const orderInfo = [{
-      id: 1,
-      order: 2
-    }, {
-      id: 3,
-      order: 4
-    }]
-
-    service.reorder(orderInfo)
-
-    const req = httpMock.expectOne(`${tasksApiUtl}/orders`)
-
-    expect(req.request.method).toEqual('PUT')
-    expect(req.request.body).toEqual(orderInfo)
-  })
-
 })
