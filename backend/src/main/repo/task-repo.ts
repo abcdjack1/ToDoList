@@ -41,7 +41,7 @@ export class TaskRepoImpl implements TaskRepo {
   save(task: TaskParams): TE.TaskEither<AppError, Task> {
     return TE.tryCatch(
       () => TaskModel.create(task),
-      (error) => databaseErrorOf(`${error}`)
+      (error: any) => databaseErrorOf(`${error.message}`)
     )
   }
 
@@ -97,20 +97,20 @@ export class TaskRepoImpl implements TaskRepo {
   getUnCompletedTasks(): TE.TaskEither<AppError, Task[]> {
     return TE.tryCatch(
       () => TaskModel.find({ completed: 'N' }).exec(),
-      (error) => databaseErrorOf(`${error}`)
+      (error: any) => databaseErrorOf(`${error.message}`)
     )
   }
 
   getCompletedTasks(): TE.TaskEither<AppError, Task[]> {
     return TE.tryCatch(
       () => TaskModel.find({ completed: 'Y' }).sort({ 'updatedAt': -1 }).exec(),
-      (error) => databaseErrorOf(`${error}`)
+      (error: any) => databaseErrorOf(`${error.message}`)
     )
   }
 
   throwIdIsNotAvailedErrorIfCastError = (error: any, id: string) =>
     error instanceof mongoose.Error.CastError ?
       validationErrorOf(`Task ID ${id} is not availed.`) as AppError :
-      databaseErrorOf(error) as AppError
+      databaseErrorOf(error.message) as AppError
 
 }
