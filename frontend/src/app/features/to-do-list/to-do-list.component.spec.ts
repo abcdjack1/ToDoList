@@ -12,9 +12,10 @@ import { DropdownModule } from 'primeng/dropdown'
 import { ImageModule } from 'primeng/image'
 
 import { ToDoListComponent } from './to-do-list.component'
-import { Task } from 'src/app/types/tasks'
+import { Task, Tasks } from 'src/app/types/tasks'
 import { ToDoService } from 'src/app/service/task.service'
 import { Observable } from 'rxjs'
+import * as TE from 'fp-ts/TaskEither'
 
 describe('ToDoListComponent', () => {
   let component: ToDoListComponent
@@ -74,7 +75,7 @@ describe('ToDoListComponent', () => {
         })
 
         it(`should hidden add dialog and tasks index increase 1 when 'add()' being called`, async () => {
-          toDoServiceSpy.save.and.resolveTo(testTask2)
+          toDoServiceSpy.save.and.returnValue(TE.of({ task: testTask2 }))
           component.toDoTasks = [testTask1]
           component.displayAddDialog = true
           await component.add()
@@ -97,7 +98,7 @@ describe('ToDoListComponent', () => {
         it(`should hidden edit dialog and selectTask.message equals inputMessage when 'edit()' being called`, async () => {
           component.toDoTasks = [testTask1, testTask2]
           toDoServiceSpy.update.and.returnValue(
-            Promise.resolve({ id: '1', message: 'test message 2', completed: 'N', priority: 'Medium', reminderTime: '2999-01-01 01:00:00' })
+            TE.of({ task: { id: '1', message: 'test message 2', completed: 'N', priority: 'Medium', reminderTime: '2999-01-01 01:00:00' } })
           )
           component.displayEditDialog = true
           component.selectTask = testTask1
@@ -116,6 +117,7 @@ describe('ToDoListComponent', () => {
 
     describe('other', () => {
       it(`should toDotasks reduce task when that task done`, async () => {
+        toDoServiceSpy.completed.and.returnValue(TE.of({ task: testTask1 }))
         component.toDoTasks = [testTask1, testTask2]
         await component.done(testTask1.id)
 
@@ -123,6 +125,7 @@ describe('ToDoListComponent', () => {
       })
 
       it(`should task delete when 'delete(task.id)' being called`, async () => {
+        toDoServiceSpy.delete.and.returnValue(TE.of({}))
         component.toDoTasks = [testTask1, testTask2]
         await component.delete(testTask1.id)
 
@@ -130,42 +133,123 @@ describe('ToDoListComponent', () => {
       })
 
       it(`should toDoTasks equals 'getToDoTasks()' result when 'onSelectTabChange(0)' being called`, async () => {
-        const tasks: Task[] = [testTask1, testTask2]
+        const tasks: Tasks = { tasks: [testTask1, testTask2] }
         component.toDoTasks = []
-        toDoServiceSpy.getToDoTasks.and.resolveTo(tasks)
+        toDoServiceSpy.getToDoTasks.and.returnValue(TE.of(tasks))
         await component.onSelectTabChange({ index: 0 })
 
-        expect(component.toDoTasks).toEqual(tasks)
+        expect(component.toDoTasks).toEqual(tasks.tasks)
       })
 
       it(`should completedTasks equals 'getCompletedTasks()' result when 'onSelectTabChange(1)' being called`, async () => {
         const tasks: Task[] = [testTask1, testTask2]
         component.completedTasks = []
-        toDoServiceSpy.getCompletedTasks.and.resolveTo(tasks)
+        toDoServiceSpy.getCompletedTasks.and.returnValue(TE.of({ tasks: tasks }))
         await component.onSelectTabChange({ index: 1 })
 
         expect(component.completedTasks).toBe(tasks)
       })
     })
 
+    describe('API Failed', () => {
+      it(`should get error when toDoService.getToDoTasks() failed`, async () => {
+        toDoServiceSpy.getToDoTasks.and.returnValue(TE.left(new Error('Get to-do tasks failed.')))
+
+        await component.getToDoTasks()
+
+        expect(component.displayErrorDialog).toBeTrue()
+        expect(component.serverErrorMessage).toBe('Get to-do tasks failed.')
+      })
+
+      it(`should get error when toDoService.getCompletedTasks() failed`, async () => {
+        toDoServiceSpy.getCompletedTasks.and.returnValue(TE.left(new Error('Get Completed tasks failed.')))
+
+        await component.getCompletedTasks()
+
+        expect(component.displayErrorDialog).toBeTrue()
+        expect(component.serverErrorMessage).toBe('Get Completed tasks failed.')
+      })
+
+      it(`should get error when toDoService.save() failed`, async () => {
+        toDoServiceSpy.save.and.returnValue(TE.left(new Error('Save task failed.')))
+        component.inputMessage = 'test'
+        component.inputPriority = 'Low'
+
+        await component.add()
+
+        expect(component.displayErrorDialog).toBeTrue()
+        expect(component.serverErrorMessage).toBe('Save task failed.')
+      })
+
+      it(`should get error when toDoService.completed() failed`, async () => {
+        toDoServiceSpy.completed.and.returnValue(TE.left(new Error('Completed task failed.')))
+        component.inputMessage = 'test'
+        component.inputPriority = 'Low'
+
+        await component.done('task id')
+
+        expect(component.displayErrorDialog).toBeTrue()
+        expect(component.serverErrorMessage).toBe('Completed task failed.')
+      })
+
+      it(`should get error when toDoService.update() failed`, async () => {
+        toDoServiceSpy.update.and.returnValue(TE.left(new Error('Update task failed.')))
+        component.inputMessage = 'test'
+        component.inputPriority = 'Low'
+
+        await component.edit()
+
+        expect(component.displayErrorDialog).toBeTrue()
+        expect(component.serverErrorMessage).toBe('Update task failed.')
+      })
+
+      it(`should get error when toDoService.delete() failed`, async () => {
+        toDoServiceSpy.delete.and.returnValue(TE.left(new Error('Delete task failed.')))
+
+        await component.delete('task id')
+
+        expect(component.displayErrorDialog).toBeTrue()
+        expect(component.serverErrorMessage).toBe('Delete task failed.')
+      })
+
+      it(`should close ErrorDialog when closeErrorDialog() being called`, async () => {
+        component.displayErrorDialog = true
+        component.serverErrorMessage = 'some error message'
+
+        component.closeErrorDialog()
+
+        expect(component.displayErrorDialog).toBeFalse()
+        expect(component.serverErrorMessage).toBe('')
+      })
+    })
+
     describe('tasks sort', () => {
       it(`should sort task by priority 'High -> Medium -> Low' when sortTasks() being called`, async () => {
-        const highTask1 = { ...testTask1, priority: 'High' }
-        const highTask2 = { ...testTask1, priority: 'High' }
-        const mediumTask1 = { ...testTask1, priority: 'Medium' }
-        const mediumTask2 = { ...testTask1, priority: 'Medium' }
-        const lowTask1 = { ...testTask1, priority: 'Low' }
-        const lowTask2 = { ...testTask1, priority: 'Low' }
-        component.toDoTasks = [mediumTask1, lowTask1, mediumTask2, highTask2, lowTask2, highTask1]
+        const highTask1 = { ...testTask1, priority: 'High', reminderTime: '2022-01-02 01:00:00' }
+        const highTask2 = { ...testTask1, priority: 'High', reminderTime: '2022-01-01 01:00:00' }
+        const mediumTask1 = { ...testTask1, priority: 'Medium', reminderTime: undefined }
+        const mediumTask2 = { ...testTask1, priority: 'Medium', reminderTime: '2022-01-01 01:00:00' }
+        const mediumTask3 = { ...testTask1, priority: 'Medium', reminderTime: '2022-01-02 01:00:00' }
+        const lowTask1 = { ...testTask1, priority: 'Low', reminderTime: '2022-01-02 01:00:00' }
+        const lowTask2 = { ...testTask1, priority: 'Low', reminderTime: undefined }
+        const lowTask3 = { ...testTask1, priority: 'Low', reminderTime: undefined, message: 'lowTask3' }
+        component.toDoTasks = [mediumTask1, lowTask1, mediumTask3, mediumTask2, highTask2, lowTask2, highTask1, lowTask3]
 
         component.sortTasks()
 
         expect(component.toDoTasks[0].priority).toBe('High')
+        expect(component.toDoTasks[0].reminderTime).toBe('2022-01-01 01:00:00')
         expect(component.toDoTasks[1].priority).toBe('High')
+        expect(component.toDoTasks[1].reminderTime).toBe('2022-01-02 01:00:00')
         expect(component.toDoTasks[2].priority).toBe('Medium')
+        expect(component.toDoTasks[2].reminderTime).toBe('2022-01-01 01:00:00')
         expect(component.toDoTasks[3].priority).toBe('Medium')
-        expect(component.toDoTasks[4].priority).toBe('Low')
+        expect(component.toDoTasks[3].reminderTime).toBe('2022-01-02 01:00:00')
+        expect(component.toDoTasks[4].priority).toBe('Medium')
         expect(component.toDoTasks[5].priority).toBe('Low')
+        expect(component.toDoTasks[5].reminderTime).toBe('2022-01-02 01:00:00')
+        expect(component.toDoTasks[6].priority).toBe('Low')
+        expect(component.toDoTasks[7].message).toBe('lowTask3')
       })
     })
 
@@ -175,7 +259,7 @@ describe('ToDoListComponent', () => {
       })
 
       it(`should get true when time was expired`, async () => {
-        expect(component.isExpired('2011-01-01 01:00:00')).toBeTrue()
+        expect(component.isExpired('2001-01-01 01:00:00')).toBeTrue()
       })
     })
 
@@ -293,6 +377,7 @@ describe('ToDoListComponent', () => {
 
         describe('click event', () => {
           it(`should completed task when notificationHandle being called with 'done' action`, async () => {
+            toDoServiceSpy.completed.and.returnValue(TE.of({ task: testTask1 }))
             component.toDoTasks = [testTask1, testTask2]
             await component.notificationHandle('done', testTask1.id)
 

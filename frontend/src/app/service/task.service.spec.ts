@@ -26,14 +26,14 @@ describe('ToDoService', () => {
   })
 
   it('should httpClient send GET /tasks/to-do API when getToDoTasks() being called', async () => {
-    service.getToDoTasks()
+    service.getToDoTasks()()
     const req = httpMock.expectOne(`${tasksApiUtl}/to-do`)
 
     expect(req.request.method).toEqual('GET')
   })
 
   it('should httpClient send GET /tasks/be-done API when getCompletedTasks() being called', async () => {
-    service.getCompletedTasks()
+    service.getCompletedTasks()()
     const req = httpMock.expectOne(`${tasksApiUtl}/be-done`)
 
     expect(req.request.method).toEqual('GET')
@@ -44,7 +44,7 @@ describe('ToDoService', () => {
     const priority = 'Low'
     const reminderTime = '2022-01-01 01:00:00'
 
-    service.save(message, priority, reminderTime)
+    service.save(message, priority, reminderTime)()
 
     const req = httpMock.expectOne(`${tasksApiUtl}`)
 
@@ -53,7 +53,7 @@ describe('ToDoService', () => {
   })
 
   it('should httpClient send PUT /tasks/:id API when update() being called', async () => {
-    service.update(testTask)
+    service.update(testTask)()
 
     const req = httpMock.expectOne(`${tasksApiUtl}/${testTask.id}`)
 
@@ -62,7 +62,7 @@ describe('ToDoService', () => {
   })
 
   it('should httpClient send DELETE /tasks/:id API when delete() being called', async () => {
-    service.delete(testTask.id)
+    service.delete(testTask.id)()
 
     const req = httpMock.expectOne(`${tasksApiUtl}/${testTask.id}`)
 
@@ -70,7 +70,7 @@ describe('ToDoService', () => {
   })
 
   it('should httpClient send PUT /tasks/:id/be-done API when completed() being called', async () => {
-    service.completed(testTask.id)
+    service.completed(testTask.id)()
 
     const req = httpMock.expectOne(`${tasksApiUtl}/${testTask.id}/be-done`)
 

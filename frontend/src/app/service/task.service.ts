@@ -3,6 +3,7 @@ import { Injectable } from '@angular/core';
 import { lastValueFrom } from 'rxjs';
 import { Tasks, Task } from 'src/app/types/tasks';
 import { environment } from 'src/environments/environment';
+import * as TE from 'fp-ts/TaskEither'
 
 @Injectable({
   providedIn: 'root'
@@ -13,33 +14,46 @@ export class ToDoService {
 
   constructor(private http: HttpClient) { }
 
-  async getToDoTasks() {
-    const result = await lastValueFrom(this.http.get<Tasks>(`${this.tasksApiUtl}/to-do`))
-    return result.tasks
+  getToDoTasks() {
+    return TE.tryCatch(
+      () => lastValueFrom(this.http.get<Tasks>(`${this.tasksApiUtl}/to-do`)),
+      (error: any) => new Error(`Get to-do tasks failed. ${error.message}`)
+    )
   }
 
-  async getCompletedTasks() {
-    const result = await lastValueFrom(this.http.get<Tasks>(`${this.tasksApiUtl}/be-done`))
-    return result.tasks
+  getCompletedTasks() {
+    return TE.tryCatch(
+      () => lastValueFrom(this.http.get<Tasks>(`${this.tasksApiUtl}/be-done`)),
+      (error: any) => new Error(`Get Completed tasks failed. ${error.message}`)
+    )
   }
 
-  async save(message: string, priority: string, reminderTime?: string): Promise<Task> {
-    const result = await lastValueFrom(this.http.post<{ task: Task }>(`${this.tasksApiUtl}`, { message: message, priority: priority, reminderTime: reminderTime }))
-    return result.task
+  save(message: string, priority: string, reminderTime?: string) {
+    return TE.tryCatch(
+      () => lastValueFrom(this.http.post<{ task: Task }>(`${this.tasksApiUtl}`, { message: message, priority: priority, reminderTime: reminderTime })),
+      (error: any) => new Error(`Save task failed. ${error.message}`)
+    )
   }
 
-  async completed(id: string) {
-    const result = await lastValueFrom(this.http.put<{ task: Task }>(`${this.tasksApiUtl}/${id}/be-done`, {}))
-    return result.task
+  completed(id: string) {
+    return TE.tryCatch(
+      () => lastValueFrom(this.http.put<{ task: Task }>(`${this.tasksApiUtl}/${id}/be-done`, {})),
+      (error: any) => new Error(`Completed task failed. ${error.message}`)
+    )
   }
 
-  async update(task: Task) {
-    const result = await lastValueFrom(this.http.put<{ task: Task }>(`${this.tasksApiUtl}/${task.id}`, task))
-    return result.task
+  update(task: Task) {
+    return TE.tryCatch(
+      () => lastValueFrom(this.http.put<{ task: Task }>(`${this.tasksApiUtl}/${task.id}`, task)),
+      (error: any) => new Error(`Update task failed. ${error.message}`)
+    )
   }
 
-  async delete(id: string) {
-    await lastValueFrom(this.http.delete<{ task: Task }>(`${this.tasksApiUtl}/${id}`, {}))
+  delete(id: string) {
+    return TE.tryCatch(
+      () => lastValueFrom(this.http.delete(`${this.tasksApiUtl}/${id}`, {})),
+      (error: any) => new Error(`Delete task failed. ${error.message}`)
+    )
   }
 
 }
