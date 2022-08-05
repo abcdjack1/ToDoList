@@ -387,6 +387,9 @@ describe('ToDoListComponent', () => {
 
           it(`should task reminderTime add one hour when notificationHandle being called with 'wait' action`, async () => {
             component.toDoTasks = [testTask1, testTask2]
+            toDoServiceSpy.update.and.returnValue(
+              TE.of({ task: { id: '1', message: 'msg1', completed: 'N', priority: 'Medium', reminderTime: '2999-01-01 02:00:00' } })
+            )
             await component.notificationHandle('wait', testTask1.id)
 
             expect(component.toDoTasks.length).toEqual(2)

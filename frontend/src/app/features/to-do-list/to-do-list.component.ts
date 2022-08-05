@@ -287,6 +287,18 @@ export class ToDoListComponent implements OnInit {
         const task = this.toDoTasks.find(t => t.id === id)
         if (task) {
           task.reminderTime = this.addOnehour(task.reminderTime)
+          await pipe(
+            this.toDoService.update(task),
+            TE.match(
+              error => {
+                this.displayErrorDialog = true
+                this.serverErrorMessage = error.message
+              },
+              task => {
+                this.sortTasks()
+              }
+            )
+          )()
         }
       }
     }
