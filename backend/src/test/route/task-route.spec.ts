@@ -9,6 +9,7 @@ import { elem } from 'fp-ts/Array'
 import { Eq } from 'fp-ts/lib/Eq'
 import { AppError, runtimeErrorOf } from '../../main/type/error-type'
 import * as dbHandler from 'testcontainers-mongoose'
+import * as E from 'fp-ts/Either'
 
 describe('Testing To-Do List API', () => {
   let server: FastifyInstance
@@ -31,13 +32,6 @@ describe('Testing To-Do List API', () => {
   })
 
   const saveTask = (data: NewTask) => taskService.save(data)
-
-  const createListTask = (data: NewTask[]) => {
-    return pipe(
-      data,
-      TE.traverseArray(saveTask)
-    )
-  }
 
   const getObjectFromBody = (response: LightMyRequestResponse, objectName: string): any => {
     return JSON.parse(response.body)[objectName]
@@ -66,22 +60,23 @@ describe('Testing To-Do List API', () => {
 
   describe('POST /tasks', () => {
     it(`should get new task`, async () => {
-      const response: any = await pipe(
-        callAPI(`${urlPath}`, 'POST', { message: newTaskData.message, priority: newTaskData.priority }),
-        TE.match(
-          _ => null,
-          response => response
-        )
-      )()
+      const responseData = await callAPI(`${urlPath}`, 'POST', { message: newTaskData.message, priority: newTaskData.priority })()
 
-      expect(response.statusCode).toBe(201)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const task = getObjectFromBody(response, 'task')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(201)
 
-      expect(task.id).not.toBeNull()
-      expect(task.message).toBe(newTaskData.message)
-      expect(task.completed).toBe('N')
-      expect(task.priority).toBe(newTaskData.priority)
+          const task = getObjectFromBody(response, 'task')
+
+          expect(task.id).not.toBeNull()
+          expect(task.message).toBe(newTaskData.message)
+          expect(task.completed).toBe('N')
+          expect(task.priority).toBe(newTaskData.priority)
+        })
+      )
     })
   })
 
@@ -94,27 +89,29 @@ describe('Testing To-Do List API', () => {
         reminderTime: '2099-01-01 01:00:00'
       }
 
-      const testData: any = await pipe(
+      const testData = await pipe(
         TE.Do,
         TE.bind("task", () => saveTask(newTaskData)),
-        TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams)),
-        TE.match(
-          _ => null,
-          ({ task, response }) => {
-            return { task: task, response: response }
-          }
-        )
+        TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams))
       )()
 
-      expect(testData.response.statusCode).toBe(200)
+      expect(E.isRight(testData)).toBe(true)
 
-      const befoerUpdatedTask = getObjectFromBody(testData.response, 'task')
+      pipe(
+        testData,
+        E.map(({ task, response }) => {
+          expect(response.statusCode).toBe(200)
 
-      expect(befoerUpdatedTask.id).toBe(testData.task.id)
-      expect(befoerUpdatedTask.message).toBe(taskParams.message)
-      expect(befoerUpdatedTask.completed).toBe(taskParams.completed)
-      expect(befoerUpdatedTask.priority).toBe(taskParams.priority)
-      expect(befoerUpdatedTask.reminderTime).toBe(taskParams.reminderTime)
+          const befoerUpdatedTask = getObjectFromBody(response, 'task')
+
+          expect(befoerUpdatedTask.id).toBe(task.id)
+          expect(befoerUpdatedTask.message).toBe(taskParams.message)
+          expect(befoerUpdatedTask.completed).toBe(taskParams.completed)
+          expect(befoerUpdatedTask.priority).toBe(taskParams.priority)
+          expect(befoerUpdatedTask.reminderTime).toBe(taskParams.reminderTime)
+        })
+      )
+
     })
 
     it(`should clear reminderTime when update task without reminderTime`, async () => {
@@ -124,27 +121,28 @@ describe('Testing To-Do List API', () => {
         priority: 'Low'
       }
 
-      const testData: any = await pipe(
+      const testData = await pipe(
         TE.Do,
         TE.bind("task", () => saveTask({ ...newTaskData, reminderTime: '2099-01-01 01:00:00' })),
-        TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams)),
-        TE.match(
-          _ => null,
-          ({ task, response }) => {
-            return { task: task, response: response }
-          }
-        )
+        TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}`, 'PUT', taskParams))
       )()
 
-      expect(testData.response.statusCode).toBe(200)
+      expect(E.isRight(testData)).toBe(true)
 
-      const befoerUpdatedTask = getObjectFromBody(testData.response, 'task')
+      pipe(
+        testData,
+        E.map(({ task, response }) => {
+          expect(response.statusCode).toBe(200)
 
-      expect(befoerUpdatedTask.id).toBe(testData.task.id)
-      expect(befoerUpdatedTask.message).toBe(taskParams.message)
-      expect(befoerUpdatedTask.completed).toBe(taskParams.completed)
-      expect(befoerUpdatedTask.priority).toBe(taskParams.priority)
-      expect(befoerUpdatedTask.reminderTime).toBeUndefined()
+          const befoerUpdatedTask = getObjectFromBody(response, 'task')
+
+          expect(befoerUpdatedTask.id).toBe(task.id)
+          expect(befoerUpdatedTask.message).toBe(taskParams.message)
+          expect(befoerUpdatedTask.completed).toBe(taskParams.completed)
+          expect(befoerUpdatedTask.priority).toBe(taskParams.priority)
+          expect(befoerUpdatedTask.reminderTime).toBeUndefined()
+        })
+      )
     })
 
     it(`shoud get 'DataNotFoundError' error when use not existed Id`, async () => {
@@ -155,21 +153,22 @@ describe('Testing To-Do List API', () => {
         priority: 'Low'
       }
 
-      const response: any = await pipe(
-        callAPI(`${urlPath}/${notExistedId}`, 'PUT', taskParams),
-        TE.match(
-          _ => null,
-          response => response
-        )
-      )()
+      const responseData = await callAPI(`${urlPath}/${notExistedId}`, 'PUT', taskParams)()
 
-      expect(response.statusCode).toBe(400)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const error = getObjectFromBody(response, 'error')
-      const message = getObjectFromBody(response, 'message')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(400)
 
-      expect(error).toBe('DataNotFoundError')
-      expect(message).toBe(`Task id ${notExistedId} not found`)
+          const error = getObjectFromBody(response, 'error')
+          const message = getObjectFromBody(response, 'message')
+
+          expect(error).toBe('DataNotFoundError')
+          expect(message).toBe(`Task id ${notExistedId} not found`)
+        })
+      )
     })
 
     it(`shoud get 'ValidationError' error when use not availed Id`, async () => {
@@ -180,212 +179,234 @@ describe('Testing To-Do List API', () => {
         priority: 'Medium'
       }
 
-      const response: any = await pipe(
-        callAPI(`${urlPath}/${notAvailedId}`, 'PUT', taskParams),
-        TE.match(
-          _ => null,
-          response => response
-        )
-      )()
+      const responseData = await callAPI(`${urlPath}/${notAvailedId}`, 'PUT', taskParams)()
 
-      expect(response.statusCode).toBe(400)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const error = getObjectFromBody(response, 'error')
-      const message = getObjectFromBody(response, 'message')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(400)
 
-      expect(error).toBe('ValidationError')
-      expect(message).toBe(`Task ID ${notAvailedId} is not availed.`)
+          const error = getObjectFromBody(response, 'error')
+          const message = getObjectFromBody(response, 'message')
+
+          expect(error).toBe('ValidationError')
+          expect(message).toBe(`Task ID ${notAvailedId} is not availed.`)
+        })
+      )
+
     })
   })
 
 
   describe('PUT /tasks/:id/be-done', () => {
     it(`should completed task`, async () => {
-      const testData: any = await pipe(
+      const testData = await pipe(
         TE.Do,
         TE.bind("task", () => saveTask(newTaskData)),
-        TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}/be-done`, 'PUT')),
-        TE.match(
-          _ => null,
-          ({ task, response }) => {
-            return { task: task, response: response }
-          }
-        )
+        TE.bind("response", ({ task }) => callAPI(`${urlPath}/${task.id}/be-done`, 'PUT'))
       )()
 
-      expect(testData.response.statusCode).toBe(200)
+      expect(E.isRight(testData)).toBe(true)
 
-      const befoerCompletedTask = getObjectFromBody(testData.response, 'task')
+      pipe(
+        testData,
+        E.map(({ task, response }) => {
+          expect(response.statusCode).toBe(200)
 
-      expect(befoerCompletedTask.id).toBe(testData.task.id)
-      expect(befoerCompletedTask.message).toBe(testData.task.message)
-      expect(befoerCompletedTask.completed).toBe('Y')
-      expect(befoerCompletedTask.priority).toBe(testData.task.priority)
+          const befoerCompletedTask = getObjectFromBody(response, 'task')
+
+          expect(befoerCompletedTask.id).toBe(task.id)
+          expect(befoerCompletedTask.message).toBe(task.message)
+          expect(befoerCompletedTask.completed).toBe('Y')
+          expect(befoerCompletedTask.priority).toBe(task.priority)
+        })
+      )
+
     })
 
     it(`should get 'ValidationError' error when use not availed id`, async () => {
       const id = '123456'
 
-      const response: any = await pipe(
-        callAPI(`${urlPath}/${id}/be-done`, 'PUT'),
-        TE.match(
-          _ => null,
-          response => response
-        )
-      )()
+      const responseData = await callAPI(`${urlPath}/${id}/be-done`, 'PUT')()
 
-      expect(response.statusCode).toBe(400)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const error = getObjectFromBody(response, 'error')
-      const message = getObjectFromBody(response, 'message')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(400)
 
-      expect(error).toBe('ValidationError')
-      expect(message).toBe(`Task ID ${id} is not availed.`)
+          const error = getObjectFromBody(response, 'error')
+          const message = getObjectFromBody(response, 'message')
+
+          expect(error).toBe('ValidationError')
+          expect(message).toBe(`Task ID ${id} is not availed.`)
+        })
+      )
+
     })
 
     it(`should get 'DataNotFoundError' error when use not existed Id`, async () => {
       const notExistedId = '62d44b90b928882b63cadbe2'
 
-      const response: any = await pipe(
-        callAPI(`${urlPath}/${notExistedId}/be-done`, 'PUT'),
-        TE.match(
-          _ => null,
-          response => response
-        )
-      )()
+      const responseData = await callAPI(`${urlPath}/${notExistedId}/be-done`, 'PUT')()
 
-      expect(response.statusCode).toBe(400)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const error = getObjectFromBody(response, 'error')
-      const message = getObjectFromBody(response, 'message')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(400)
 
-      expect(error).toBe('DataNotFoundError')
-      expect(message).toBe(`Task id ${notExistedId} not found`)
+          const error = getObjectFromBody(response, 'error')
+          const message = getObjectFromBody(response, 'message')
+
+          expect(error).toBe('DataNotFoundError')
+          expect(message).toBe(`Task id ${notExistedId} not found`)
+        })
+      )
+
     })
   })
 
   describe('DELETE /tasks/:id', () => {
     it(`should delete task`, async () => {
-      const deleteReponse: any = await pipe(
+      const responseData = await pipe(
         saveTask(newTaskData),
-        TE.chain(t => callAPI(`${urlPath}/${t.id}`, 'DELETE')),
-        TE.match(
-          _ => null,
-          response => response
-        )
+        TE.chain(t => callAPI(`${urlPath}/${t.id}`, 'DELETE'))
       )()
 
-      expect(deleteReponse.statusCode).toBe(204)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const tasks: any = await pipe(
-        taskService.getUnCompletedTasks(),
-        TE.match(
-          _ => null,
-          tasks => tasks
-        )
-      )()
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(204)
+        })
+      )
 
-      expect(tasks.length).toBe(0)
+      const tasksData = await taskService.getUnCompletedTasks()()
+
+      expect(E.isRight(tasksData)).toBe(true)
+
+      pipe(
+        tasksData,
+        E.map(tasks => {
+          expect(tasks.length).toBe(0)
+        })
+      )
+
     })
 
     it(`shoud get 'DataNotFoundError' error when use not existed Id`, async () => {
       const notExistedId = '62d44b90b928882b63cadbe2'
 
-      const response: any = await pipe(
-        callAPI(`${urlPath}/${notExistedId}`, 'DELETE'),
-        TE.match(
-          _ => null,
-          response => response
-        )
-      )()
+      const responseData = await callAPI(`${urlPath}/${notExistedId}`, 'DELETE')()
 
-      expect(response.statusCode).toBe(400)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const error = getObjectFromBody(response, 'error')
-      const message = getObjectFromBody(response, 'message')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(400)
 
-      expect(error).toBe('DataNotFoundError')
-      expect(message).toBe(`Task id ${notExistedId} not found`)
+          const error = getObjectFromBody(response, 'error')
+          const message = getObjectFromBody(response, 'message')
+
+          expect(error).toBe('DataNotFoundError')
+          expect(message).toBe(`Task id ${notExistedId} not found`)
+        })
+      )
+
     })
 
     it(`shoud get 'ValidationError' error when use not availed id`, async () => {
       const id = '123456'
 
-      const response: any = await pipe(
-        callAPI(`${urlPath}/${id}`, 'DELETE'),
-        TE.match(
-          _ => null,
-          response => response
-        )
-      )()
+      const responseData = await callAPI(`${urlPath}/${id}`, 'DELETE')()
 
-      expect(response.statusCode).toBe(400)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const error = getObjectFromBody(response, 'error')
-      const message = getObjectFromBody(response, 'message')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(400)
 
-      expect(error).toBe('ValidationError')
-      expect(message).toBe(`Task ID ${id} is not availed.`)
+          const error = getObjectFromBody(response, 'error')
+          const message = getObjectFromBody(response, 'message')
+
+          expect(error).toBe('ValidationError')
+          expect(message).toBe(`Task ID ${id} is not availed.`)
+        })
+      )
     })
   })
 
   describe('GET /tasks/to-do', () => {
     it(`should get uncompleted tasks`, async () => {
-      const arrangeTestData = () => pipe(
-        [newTaskData, newTaskData2],
-        createListTask
-      )
 
-      const testData: any = await pipe(
+      const testData = await pipe(
         TE.Do,
-        TE.bind('tasks', () => arrangeTestData()),
-        TE.bind('response', () => callAPI(`${urlPath}/to-do`, 'GET')),
-        TE.match(
-          _ => null,
-          ({ tasks, response }) => {
-            return { tasks: tasks, response: response }
-          }
-        )
+        TE.bind('tasks', () => pipe(
+          [newTaskData, newTaskData2],
+          TE.traverseArray(saveTask)
+        )),
+        TE.bind('response', () => callAPI(`${urlPath}/to-do`, 'GET'))
       )()
 
-      expect(testData.response.statusCode).toBe(200)
+      expect(E.isRight(testData)).toBe(true)
 
-      const toDoTasks: Task[] = getObjectFromBody(testData.response, 'tasks')
+      pipe(
+        testData,
+        E.map(({ tasks, response }) => {
+          expect(response.statusCode).toBe(200)
 
-      expect(toDoTasks.length).toBe(testData.tasks.length)
+          const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
 
-      const eqTask: Eq<Task> = {
-        equals: (a: Task, b: Task) => a.message === b.message
-      }
+          expect(toDoTasks.length).toBe(tasks.length)
 
-      expect(pipe(toDoTasks, elem(eqTask)(testData.tasks[0]))).toBeTruthy()
-      expect(pipe(toDoTasks, elem(eqTask)(testData.tasks[1]))).toBeTruthy()
+          const eqTask: Eq<Task> = {
+            equals: (a: Task, b: Task) => a.message === b.message
+          }
+
+          expect(pipe(toDoTasks, elem(eqTask)(tasks[0]))).toBe(true)
+          expect(pipe(toDoTasks, elem(eqTask)(tasks[1]))).toBe(true)
+        })
+      )
+
     })
   })
 
   describe('GET /tasks/be-done', () => {
     it(`should get completed tasks`, async () => {
       const completed = (task: Task) => taskService.completedById(task.id)
-      const arrangeTestData = () => pipe(
-        [newTaskData, newTaskData2],
-        createListTask,
-        TE.chain(TE.traverseArray(completed))
-      )
 
-      const response: any = await pipe(
-        arrangeTestData(),
-        TE.chain(_ => callAPI(`${urlPath}/be-done`, 'GET')),
-        TE.match(
-          _ => null,
-          response => response
-        )
+      const responseData = await pipe(
+        [newTaskData, newTaskData2],
+        TE.traverseArray(
+          m => pipe(
+            m,
+            saveTask,
+            TE.chain(completed))
+        ),
+        TE.chain(_ => callAPI(`${urlPath}/be-done`, 'GET'))
       )()
 
-      expect(response.statusCode).toBe(200)
+      expect(E.isRight(responseData)).toBe(true)
 
-      const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
+      pipe(
+        responseData,
+        E.map(response => {
+          expect(response.statusCode).toBe(200)
 
-      expect(toDoTasks.length).toBe(2)
+          const toDoTasks: Task[] = getObjectFromBody(response, 'tasks')
+
+          expect(toDoTasks.length).toBe(2)
+        })
+      )
+
     })
   })
 })
