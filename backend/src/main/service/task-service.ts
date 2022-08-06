@@ -41,16 +41,7 @@ export class TaskServiceImpl implements TaskService {
   }
 
   save(data: NewTask): TE.TaskEither<AppError, Task> {
-    const genTaskBody = (data: NewTask): TaskParams => {
-      return {
-        message: data.message,
-        completed: 'N',
-        priority: data.priority,
-        reminderTime: data.reminderTime
-      }
-    }
-
-    return this.taskRepo.save(genTaskBody(data))
+    return this.taskRepo.save({ ...data, completed: 'N' })
   }
 
   update(id: string, taskParam: TaskParams): TE.TaskEither<AppError, Task> {
