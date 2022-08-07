@@ -41,7 +41,7 @@ export class TaskRepoImpl implements TaskRepo {
   save(task: TaskParams): TE.TaskEither<AppError, Task> {
     return TE.tryCatch(
       () => TaskModel.create(task),
-      (error: any) => databaseErrorOf(`${error.message}`)
+      error => databaseErrorOf(`Create task failed. ${error}`)
     )
   }
 
@@ -49,11 +49,12 @@ export class TaskRepoImpl implements TaskRepo {
     const updateData = this.genUpdateData(taskParam)
     const findByIdAndUpdate = () => TE.tryCatch(
       () => TaskModel.findByIdAndUpdate(id, updateData, { new: true }).exec(),
-      (error) => this.throwIdIsNotAvailedErrorIfCastError(error, id)
+      error => this.throwIdIsNotAvailedErrorIfCastError(error, id)
     )
+
     return pipe(
       findByIdAndUpdate(),
-      TE.chain(t => t === null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
+      TE.chain(TE.fromNullable(dataNotFoundErrorOf(`Task id ${id} not found`) as AppError))
     )
   }
 
@@ -78,7 +79,7 @@ export class TaskRepoImpl implements TaskRepo {
 
     return pipe(
       findByIdAndUpdate(),
-      TE.chain(t => t === null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
+      TE.chain(TE.fromNullable(dataNotFoundErrorOf(`Task id ${id} not found`) as AppError))
     )
   }
 
@@ -90,7 +91,7 @@ export class TaskRepoImpl implements TaskRepo {
 
     return pipe(
       findByIdAndRemove(),
-      TE.chain(t => t === null ? TE.left(dataNotFoundErrorOf(`Task id ${id} not found`)) : TE.right(t))
+      TE.chain(TE.fromNullable(dataNotFoundErrorOf(`Task id ${id} not found`) as AppError))
     )
   }
 
@@ -111,6 +112,6 @@ export class TaskRepoImpl implements TaskRepo {
   throwIdIsNotAvailedErrorIfCastError = (error: any, id: string) =>
     error instanceof mongoose.Error.CastError ?
       validationErrorOf(`Task ID ${id} is not availed.`) as AppError :
-      databaseErrorOf(error.message) as AppError
+      databaseErrorOf(error) as AppError
 
 }
